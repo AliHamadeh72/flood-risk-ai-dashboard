@@ -1,0 +1,7 @@
+region_id,region_name,latitude,longitude,elevation_mean,elevation_min,elevation_max,slope_mean,distance_to_river_km,population_density
+LB-BEY-001,Beirut River Area,33.885,35.530,28,4,76,1.8,0.4,22400
+LB-TRI-001,Tripoli Coastal Plain,34.440,35.850,18,2,65,1.4,0.7,18500
+LB-SAI-001,Saida Coastal Basin,33.565,35.370,24,3,92,2.0,1.1,10500
+LB-ZAH-001,Zahle Valley,33.850,35.890,940,860,1040,6.8,1.6,980
+LB-TYR-001,Tyre Coastal Lowlands,33.270,35.205,12,1,54,1.2,0.5,6200
+LB-JBE-001,Jbeil Hills,34.120,35.665,380,140,760,9.6,2.9,1450

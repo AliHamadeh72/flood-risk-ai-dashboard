@@ -1,0 +1,14 @@
+[
+  "rainfall_1d",
+  "rainfall_3d",
+  "rainfall_7d",
+  "rainfall_14d",
+  "humidity_avg_3d",
+  "humidity_avg_7d",
+  "temperature_avg_7d",
+  "wind_avg_7d",
+  "elevation_mean",
+  "slope_mean",
+  "distance_to_river_km",
+  "population_density"
+]

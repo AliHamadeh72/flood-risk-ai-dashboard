@@ -1,0 +1,103 @@
+import { Activity, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
+import predictions from "./data/risk_predictions.json";
+import Chatbot from "./components/Chatbot";
+import MapView from "./components/MapView";
+import ModelInfo from "./components/ModelInfo";
+import RiskCharts from "./components/RiskCharts";
+import RiskTable from "./components/RiskTable";
+import type { Prediction } from "./types";
+
+const data = predictions as Prediction[];
+
+function App() {
+  const highRisk = data.filter((item) => item.risk_label === "High");
+  const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
+  const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
+  const sortedDates = data.map((item) => item.date).sort();
+  const latestDate = sortedDates[sortedDates.length - 1];
+
+  return (
+    <main className="min-h-screen bg-[#edf2ef] text-ink">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">Flood Risk AI Dashboard</h1>
+              <p className="mt-1 max-w-3xl text-sm text-slate-600">
+                Static GitHub Pages demo powered by precomputed model outputs and grounded local retrieval.
+              </p>
+            </div>
+            <div className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600">
+              Latest update: <span className="font-semibold text-ink">{latestDate}</span>
+            </div>
+          </div>
+          <nav className="flex flex-wrap gap-2 text-sm">
+            {[
+              ["dashboard", "Dashboard", Activity],
+              ["map", "Map", Map],
+              ["table", "Table", Table2],
+              ["chatbot", "Chatbot", MessageSquare]
+            ].map(([href, label, Icon]) => (
+              <a key={href as string} href={`#${href}`} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-panel px-3 py-2 font-medium hover:bg-white">
+                <Icon className="h-4 w-4" />
+                {label as string}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <section id="dashboard" className="mx-auto grid max-w-7xl gap-4 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+        <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
+        <Kpi title="Highest-risk region" value={highest.region_name} detail={`${Math.round(highest.risk_score * 100)}% model confidence`} />
+        <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
+        <Kpi title="Weather source" value="NASA POWER" detail="Near-real-time public data pipeline" />
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
+        <div id="map" className="min-h-[440px]">
+          <SectionTitle icon={<Map className="h-5 w-5" />} title="Risk Map" />
+          <MapView predictions={data} />
+        </div>
+        <div>
+          <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
+          <RiskCharts predictions={data} />
+        </div>
+      </section>
+
+      <section id="table" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
+        <RiskTable predictions={data} />
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div id="chatbot">
+          <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
+          <Chatbot predictions={data} />
+        </div>
+        <ModelInfo />
+      </section>
+    </main>
+  );
+}
+
+function Kpi({ title, value, detail }: { title: string; value: string; detail: string }) {
+  return (
+    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{title}</p>
+      <p className="mt-2 text-xl font-semibold leading-tight text-ink">{value}</p>
+      <p className="mt-2 text-sm text-slate-600">{detail}</p>
+    </article>
+  );
+}
+
+function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      {icon}
+      <h2 className="text-lg font-semibold">{title}</h2>
+    </div>
+  );
+}
+
+export default App;
