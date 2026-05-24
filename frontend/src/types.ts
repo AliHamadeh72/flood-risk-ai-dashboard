@@ -1,4 +1,14 @@
 export type RiskLabel = "Low" | "Medium" | "High";
+export type MapMode = "current" | "rainy";
+
+export type RainySeasonRecord = {
+  ACS_Code: string;
+  month: string;
+  rainfall_mm: number;
+  avg_humidity: number;
+  river_discharge: number;
+  risk_label: RiskLabel;
+};
 
 export type Prediction = {
   region_id: string;

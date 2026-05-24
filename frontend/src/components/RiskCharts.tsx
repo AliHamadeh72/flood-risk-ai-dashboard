@@ -14,7 +14,7 @@ import {
   YAxis
 } from "recharts";
 import rainySeasonHistory from "../data/rainy_season_history.json";
-import type { Prediction, RiskLabel } from "../types";
+import type { Prediction, RainySeasonRecord, RiskLabel } from "../types";
 
 const colors: Record<RiskLabel, string> = {
   Low: "#287b53",
@@ -26,26 +26,19 @@ type RiskChartsProps = {
   predictions: Prediction[];
   selectedRegionId: string | null;
   onSelectRegion: (regionId: string) => void;
+  onSelectRainySeasonRegion: (regionId: string) => void;
 };
 
 type ChartClickState = {
   activePayload?: Array<{
     payload?: {
+      ACS_Code?: string;
       region_id?: string;
     };
   }>;
 };
 
-type RainySeasonRecord = {
-  ACS_Code: string;
-  month: string;
-  rainfall_mm: number;
-  avg_humidity: number;
-  river_discharge: number;
-  risk_label: RiskLabel;
-};
-
-export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion }: RiskChartsProps) {
+export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion, onSelectRainySeasonRegion }: RiskChartsProps) {
   const cadasterBars = [...predictions]
     .sort((a, b) => b.risk_score - a.risk_score)
     .map((item) => ({
@@ -63,6 +56,10 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
   const selectFromChartState = (state: ChartClickState | undefined) => {
     const regionId = state?.activePayload?.[0]?.payload?.region_id;
     if (regionId) onSelectRegion(regionId);
+  };
+  const selectRainySeasonFromChartState = (state: ChartClickState | undefined) => {
+    const regionId = state?.activePayload?.[0]?.payload?.ACS_Code;
+    if (regionId) onSelectRainySeasonRegion(regionId);
   };
 
   return (
@@ -122,7 +119,7 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Rainy-season historical trend</h3>
         <div className="h-60">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={rainyHistory}>
+            <ComposedChart data={rainyHistory} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="rain" name="rainfall" unit=" mm" />
@@ -139,7 +136,7 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
                 animationEasing="ease-out"
               >
                 {rainyHistory.map((item) => (
-                  <Cell key={`${item.ACS_Code}-${item.month}`} fill={colors[item.risk_label]} />
+                  <Cell key={`${item.ACS_Code}-${item.month}`} fill={colors[item.risk_label]} cursor="pointer" />
                 ))}
               </Bar>
               <Line

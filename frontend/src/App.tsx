@@ -1,18 +1,21 @@
 import { useState } from "react";
-import { Activity, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
+import { Activity, ArrowLeftRight, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
+import rainySeasonHistory from "./data/rainy_season_history.json";
 import Chatbot from "./components/Chatbot";
 import MapView from "./components/MapView";
 import ModelInfo from "./components/ModelInfo";
 import RiskCharts from "./components/RiskCharts";
 import RiskTable from "./components/RiskTable";
-import type { Prediction } from "./types";
+import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
 const data = predictions as Prediction[];
+const rainyData = rainySeasonHistory as RainySeasonRecord[];
 
 function App() {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [zoomRequestId, setZoomRequestId] = useState(0);
+  const [mapMode, setMapMode] = useState<MapMode>("current");
   const highRisk = data.filter((item) => item.risk_label === "High");
   const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
@@ -22,6 +25,11 @@ function App() {
     setSelectedRegionId(regionId);
     setZoomRequestId((current) => current + 1);
   };
+  const selectRainySeasonRegion = (regionId: string) => {
+    setMapMode("rainy");
+    selectRegion(regionId);
+  };
+  const toggleMapMode = () => setMapMode((current) => (current === "current" ? "rainy" : "current"));
 
   return (
     <main className="min-h-screen bg-[#edf2ef] text-ink">
@@ -68,12 +76,29 @@ function App() {
 
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
         <div id="map" className="min-h-[440px]">
-          <SectionTitle icon={<Map className="h-5 w-5" />} title="Risk Map" />
-          <MapView predictions={data} selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} onSelectRegion={selectRegion} />
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-river hover:text-river"
+              onClick={toggleMapMode}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              {mapMode === "rainy" ? "Back to current forecast" : "Rainy season forecast"}
+            </button>
+          </div>
+          <MapView
+            predictions={data}
+            rainySeasonRecords={rainyData}
+            mapMode={mapMode}
+            selectedRegionId={selectedRegionId}
+            zoomRequestId={zoomRequestId}
+            onSelectRegion={selectRegion}
+          />
         </div>
         <div>
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
-          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={selectRegion} />
+          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={selectRegion} onSelectRainySeasonRegion={selectRainySeasonRegion} />
         </div>
       </section>
 
