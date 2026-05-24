@@ -1,18 +1,5 @@
 import { BrainCircuit } from "lucide-react";
 
-const features = [
-  "rainfall_1d",
-  "rainfall_3d",
-  "rainfall_7d",
-  "rainfall_14d",
-  "humidity_avg_7d",
-  "temperature_avg_7d",
-  "wind_avg_7d",
-  "soil_moisture_avg_7d",
-  "river_discharge_ratio",
-  "ACS_Code"
-];
-
 export default function ModelInfo() {
   return (
     <section className="rounded-md border border-slate-200 bg-white p-5 shadow-sm">
@@ -27,13 +14,12 @@ export default function ModelInfo() {
         <Info label="Deployment mode" value="Static JSON on GitHub Pages" />
       </dl>
       <div className="mt-5">
-        <h3 className="text-sm font-semibold text-slate-700">Features used</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {features.map((feature) => (
-            <span key={feature} className="rounded-md bg-panel px-2 py-1 text-xs text-slate-700 ring-1 ring-slate-200">
-              {feature}
-            </span>
-          ))}
+        <h3 className="text-sm font-semibold text-slate-700">Simplified risk formula</h3>
+        <div className="mt-2 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
+          <Info label="Score mix" value="38% rain, 17% humidity, 15% soil, 30% river flow" />
+          <Info label="High risk" value="Heavy rain, river flow >= 1.35x normal, or score >= 0.72" />
+          <Info label="Medium risk" value="Moderate rain, river flow >= 0.85x normal, or score >= 0.45" />
+          <Info label="Low risk" value="Below medium thresholds with routine monitoring" />
         </div>
       </div>
       <p className="mt-5 text-sm leading-6 text-slate-600">

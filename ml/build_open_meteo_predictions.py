@@ -46,17 +46,17 @@ def risk_from_weather(row: pd.Series) -> tuple[str, float, str, str]:
 
     drivers = []
     if rainfall >= 60:
-        drivers.append("high 7-day Open-Meteo precipitation")
+        drivers.append("Heavy rain over the last 7 days")
     elif rainfall >= 25:
-        drivers.append("moderate 7-day Open-Meteo precipitation")
+        drivers.append("Moderate recent rainfall")
     else:
-        drivers.append("low 7-day Open-Meteo precipitation")
+        drivers.append("Limited recent rainfall")
     if humidity >= 80:
-        drivers.append("high relative humidity")
+        drivers.append("High humidity")
     if not pd.isna(soil_moisture):
-        drivers.append("soil moisture available")
+        drivers.append("Soil moisture included")
     if not pd.isna(discharge_ratio):
-        drivers.append(f"river discharge ratio {discharge_ratio:.2f}x mean")
+        drivers.append(f"River flow is {discharge_ratio:.2f}x its normal level")
 
     return label, round(score, 2), "; ".join(drivers), action
 

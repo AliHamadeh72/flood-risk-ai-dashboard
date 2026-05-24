@@ -13,6 +13,7 @@ This project is a decision-support prototype. It is not an official emergency wa
 - Cadaster GeoJSON export for the React map
 - Rule-based Open-Meteo flood-risk scoring into Low, Medium, and High
 - Prediction exports to CSV and JSON
+- Rainy-season historical chart data for November through March
 - RAG document generation and local retrieval utilities
 - React dashboard with map, charts, table, and chatbot
 - Optional FastAPI backend scaffold
@@ -140,7 +141,7 @@ Validate model labels and visualization coverage:
 python ml/validate_open_meteo_model.py
 ```
 
-The generated fixture includes one Low, one Medium, and one High cadaster so the map and charts can be visually checked across all risk colors.
+The generated fixture includes one Low, one Medium, and one High cadaster so the map and charts can be visually checked across all risk colors. It also writes `frontend/src/data/rainy_season_history.json` for the dashboard's rainy-season historical chart.
 
 ## Map Behavior
 

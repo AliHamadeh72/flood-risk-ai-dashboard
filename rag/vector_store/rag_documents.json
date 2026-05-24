@@ -3,18 +3,18 @@
     "id": "35229",
     "region_name": "Massaaoudiye",
     "date": "2026-05-24",
-    "text": "Region: Massaaoudiye. Date: 2026-05-24. Predicted flood risk: Medium. Risk score: 0.5. Main drivers: moderate 7-day Open-Meteo precipitation; high relative humidity; soil moisture available; river discharge ratio 0.94x mean. 7-day rainfall is 30.24 mm, humidity is 82.0%, temperature is 20.0 C, wind speed is 10.0 m/s. Recommended action: Monitor low-lying roads and keep drainage crews on standby."
+    "text": "Region: Massaaoudiye. Date: 2026-05-24. Predicted flood risk: Medium. Risk score: 0.5. Main drivers: Moderate recent rainfall; High humidity; Soil moisture included; River flow is 0.94x its normal level. 7-day rainfall is 30.24 mm, humidity is 82.0%, temperature is 20.0 C, wind speed is 10.0 m/s. Recommended action: Monitor low-lying roads and keep drainage crews on standby."
   },
   {
     "id": "35237",
     "region_name": "Tall Hmayra",
     "date": "2026-05-24",
-    "text": "Region: Tall Hmayra. Date: 2026-05-24. Predicted flood risk: Low. Risk score: 0.29. Main drivers: low 7-day Open-Meteo precipitation; soil moisture available; river discharge ratio 0.67x mean. 7-day rainfall is 8.4 mm, humidity is 68.0%, temperature is 21.0 C, wind speed is 8.0 m/s. Recommended action: Continue routine monitoring and review rainfall trend updates."
+    "text": "Region: Tall Hmayra. Date: 2026-05-24. Predicted flood risk: Low. Risk score: 0.29. Main drivers: Limited recent rainfall; Soil moisture included; River flow is 0.67x its normal level. 7-day rainfall is 8.4 mm, humidity is 68.0%, temperature is 21.0 C, wind speed is 8.0 m/s. Recommended action: Continue routine monitoring and review rainfall trend updates."
   },
   {
     "id": "35241",
     "region_name": "Barcha",
     "date": "2026-05-24",
-    "text": "Region: Barcha. Date: 2026-05-24. Predicted flood risk: High. Risk score: 0.84. Main drivers: high 7-day Open-Meteo precipitation; high relative humidity; soil moisture available; river discharge ratio 1.53x mean. 7-day rainfall is 70.56 mm, humidity is 91.0%, temperature is 19.0 C, wind speed is 13.0 m/s. Recommended action: Prioritize drainage inspection, field monitoring, and public advisory preparation."
+    "text": "Region: Barcha. Date: 2026-05-24. Predicted flood risk: High. Risk score: 0.84. Main drivers: Heavy rain over the last 7 days; High humidity; Soil moisture included; River flow is 1.53x its normal level. 7-day rainfall is 70.56 mm, humidity is 91.0%, temperature is 19.0 C, wind speed is 13.0 m/s. Recommended action: Prioritize drainage inspection, field monitoring, and public advisory preparation."
   }
 ]

@@ -15,6 +15,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - React + Vite + TypeScript frontend in `frontend/`
 - Leaflet cadaster risk map
 - Recharts visualizations
+- Rainy-season historical chart from generated Open-Meteo-style records
 - Static JSON prediction data for GitHub Pages
 - Open-Meteo cadaster weather pipeline in `ml/fetch_open_meteo_cadasters.py`
 - Open-Meteo Flood API pipeline in `ml/fetch_open_meteo_flood_cadasters.py`
@@ -82,6 +83,7 @@ python ml/build_open_meteo_predictions.py
 - `ml/generate_open_meteo_test_data.py` writes deterministic weather, flood, and expected-risk fixtures under `data/test/`.
 - `ml/validate_open_meteo_model.py` rebuilds predictions from those fixtures and checks expected labels.
 - The current fixture covers Low, Medium, and High, so it also validates visualization color coverage.
+- `frontend/src/data/rainy_season_history.json` is generated from those fixtures for the rainy-season trend chart.
 
 Recent validation result:
 

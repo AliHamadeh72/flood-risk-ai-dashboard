@@ -8,6 +8,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_DIR = ROOT / "data" / "test"
+FRONTEND_DATA_DIR = ROOT / "frontend" / "src" / "data"
 
 
 SCENARIOS = [
@@ -55,10 +56,12 @@ SCENARIOS = [
 
 def main() -> None:
     TEST_DIR.mkdir(parents=True, exist_ok=True)
+    FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
     start = datetime(2026, 5, 24)
     weather_rows = []
     flood_rows = []
     expected_rows = []
+    history_rows = []
 
     for scenario in SCENARIOS:
         for hour in range(168):
@@ -94,9 +97,31 @@ def main() -> None:
             )
         expected_rows.append({"ACS_Code": scenario["ACS_Code"], "expected_risk": scenario["expected_risk"]})
 
+        rainy_months = [
+            ("2025-11", scenario["precipitation"] * 24 * 8, scenario["river"] * 0.74),
+            ("2025-12", scenario["precipitation"] * 24 * 13, scenario["river"] * 0.92),
+            ("2026-01", scenario["precipitation"] * 24 * 18, scenario["river"] * 1.08),
+            ("2026-02", scenario["precipitation"] * 24 * 16, scenario["river"] * 1.0),
+            ("2026-03", scenario["precipitation"] * 24 * 11, scenario["river"] * 0.86),
+        ]
+        for month, rainfall, discharge in rainy_months:
+            history_rows.append(
+                {
+                    "ACS_Code": scenario["ACS_Code"],
+                    "month": month,
+                    "rainfall_mm": round(rainfall, 2),
+                    "avg_humidity": scenario["humidity"],
+                    "river_discharge": round(discharge, 2),
+                    "risk_label": scenario["expected_risk"],
+                }
+            )
+
     pd.DataFrame(weather_rows).to_csv(TEST_DIR / "open_meteo_weather_test.csv", index=False)
     pd.DataFrame(flood_rows).to_csv(TEST_DIR / "open_meteo_flood_test.csv", index=False)
     pd.DataFrame(expected_rows).to_csv(TEST_DIR / "open_meteo_expected_risk.csv", index=False)
+    history = pd.DataFrame(history_rows)
+    history.to_csv(TEST_DIR / "open_meteo_rainy_season_history.csv", index=False)
+    (FRONTEND_DATA_DIR / "rainy_season_history.json").write_text(history.to_json(orient="records", indent=2), encoding="utf-8")
     print(f"Wrote deterministic Open-Meteo test fixtures to {TEST_DIR}")
 
 
