@@ -95,10 +95,11 @@ def build_predictions(input_csv: Path, cadasters_geojson: Path) -> pd.DataFrame:
     for acs_code, group in weather.groupby("ACS_Code"):
         latest = group.tail(168)
         last_24h = group.tail(24)
+        update_date = group["date_time"].min().strftime("%Y-%m-%d")
         row = {
             "region_id": acs_code,
             "region_name": cadaster_names.get(acs_code, f"Cadaster {acs_code}"),
-            "date": latest["date_time"].max().strftime("%Y-%m-%d"),
+            "date": update_date,
             "latitude": round(float(group["latitude"].iloc[-1]), 6),
             "longitude": round(float(group["longitude"].iloc[-1]), 6),
             "rainfall_1d": round(float(last_24h["precipitation"].sum()), 2),

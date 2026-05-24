@@ -1,2 +1,2 @@
 region_id,region_name,date,latitude,longitude,rainfall_1d,rainfall_3d,rainfall_7d,rainfall_14d,humidity_avg_3d,humidity_avg_7d,temperature_avg_7d,wind_avg_7d,elevation_mean,slope_mean,distance_to_river_km,soil_moisture_avg_7d,risk_label,risk_score,main_drivers,recommended_action
-35237,Tall Hmayra,2026-05-30,34.62156,36.076919,0.0,0.0,0.6,0.6,80.1,78.19,20.77,11.34,0,0,0,0.107,Low,0.25,low 7-day Open-Meteo precipitation; soil moisture available,Continue routine monitoring and review rainfall trend updates.
+35237,Tall Hmayra,2026-05-24,34.62156,36.076919,0.0,0.0,0.6,0.6,80.1,78.19,20.77,11.34,0,0,0,0.107,Low,0.25,low 7-day Open-Meteo precipitation; soil moisture available,Continue routine monitoring and review rainfall trend updates.
