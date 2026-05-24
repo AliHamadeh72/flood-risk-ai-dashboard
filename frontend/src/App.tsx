@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Activity, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
 import Chatbot from "./components/Chatbot";
@@ -10,6 +11,7 @@ import type { Prediction } from "./types";
 const data = predictions as Prediction[];
 
 function App() {
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const highRisk = data.filter((item) => item.risk_label === "High");
   const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
@@ -49,7 +51,12 @@ function App() {
 
       <section id="dashboard" className="mx-auto grid max-w-7xl gap-4 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
         <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
-        <Kpi title="Highest-risk region" value={highest.region_name} detail={`${Math.round(highest.risk_score * 100)}% model confidence`} />
+        <Kpi
+          title="Highest-risk region"
+          value={highest.region_name}
+          detail={`${Math.round(highest.risk_score * 100)}% model confidence`}
+          onClick={() => setSelectedRegionId(highest.region_id)}
+        />
         <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
       </section>
@@ -57,11 +64,11 @@ function App() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
         <div id="map" className="min-h-[440px]">
           <SectionTitle icon={<Map className="h-5 w-5" />} title="Risk Map" />
-          <MapView predictions={data} />
+          <MapView predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={setSelectedRegionId} />
         </div>
         <div>
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
-          <RiskCharts predictions={data} />
+          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={setSelectedRegionId} />
         </div>
       </section>
 
@@ -81,13 +88,24 @@ function App() {
   );
 }
 
-function Kpi({ title, value, detail }: { title: string; value: string; detail: string }) {
-  return (
-    <article className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+function Kpi({ title, value, detail, onClick }: { title: string; value: string; detail: string; onClick?: () => void }) {
+  const className = `rounded-md border border-slate-200 bg-white p-4 text-left shadow-sm ${
+    onClick ? "cursor-pointer transition hover:border-river hover:shadow-md focus:outline-none focus:ring-2 focus:ring-river" : ""
+  }`;
+  const content = (
+    <>
       <p className="text-sm font-medium text-slate-500">{title}</p>
       <p className="mt-2 text-xl font-semibold leading-tight text-ink">{value}</p>
       <p className="mt-2 text-sm text-slate-600">{detail}</p>
-    </article>
+    </>
+  );
+
+  return onClick ? (
+    <button type="button" className={className} onClick={onClick} title={`Zoom to ${value}`}>
+      {content}
+    </button>
+  ) : (
+    <article className={className}>{content}</article>
   );
 }
 
