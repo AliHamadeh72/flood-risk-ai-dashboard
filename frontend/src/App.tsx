@@ -12,11 +12,16 @@ const data = predictions as Prediction[];
 
 function App() {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [zoomRequestId, setZoomRequestId] = useState(0);
   const highRisk = data.filter((item) => item.risk_label === "High");
   const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
   const sortedDates = data.map((item) => item.date).sort();
   const latestDate = sortedDates[sortedDates.length - 1];
+  const selectRegion = (regionId: string) => {
+    setSelectedRegionId(regionId);
+    setZoomRequestId((current) => current + 1);
+  };
 
   return (
     <main className="min-h-screen bg-[#edf2ef] text-ink">
@@ -55,7 +60,7 @@ function App() {
           title="Highest-risk region"
           value={highest.region_name}
           detail={`${Math.round(highest.risk_score * 100)}% model confidence`}
-          onClick={() => setSelectedRegionId(highest.region_id)}
+          onClick={() => selectRegion(highest.region_id)}
         />
         <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
@@ -64,11 +69,11 @@ function App() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
         <div id="map" className="min-h-[440px]">
           <SectionTitle icon={<Map className="h-5 w-5" />} title="Risk Map" />
-          <MapView predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={setSelectedRegionId} />
+          <MapView predictions={data} selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} onSelectRegion={selectRegion} />
         </div>
         <div>
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
-          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={setSelectedRegionId} />
+          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={selectRegion} />
         </div>
       </section>
 

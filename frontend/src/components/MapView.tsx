@@ -21,10 +21,11 @@ type RegionProps = {
 type MapViewProps = {
   predictions: Prediction[];
   selectedRegionId: string | null;
+  zoomRequestId: number;
   onSelectRegion: (regionId: string) => void;
 };
 
-export default function MapView({ predictions, selectedRegionId, onSelectRegion }: MapViewProps) {
+export default function MapView({ predictions, selectedRegionId, zoomRequestId, onSelectRegion }: MapViewProps) {
   const byRegion = new Map(predictions.map((item) => [item.region_id, item]));
   const byCadaster = new Map(predictions.map((item) => [item.region_id, item]));
   const selectedName = predictions.find((item) => item.region_id === selectedRegionId)?.region_name;
@@ -33,7 +34,7 @@ export default function MapView({ predictions, selectedRegionId, onSelectRegion 
     <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
       <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[440px] w-full">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <ZoomToCadaster selectedRegionId={selectedRegionId} />
+        <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} />
         <GeoJSON
           key={selectedRegionId ?? "no-selection"}
           data={cadasters as never}
@@ -84,7 +85,7 @@ export default function MapView({ predictions, selectedRegionId, onSelectRegion 
   );
 }
 
-function ZoomToCadaster({ selectedRegionId }: { selectedRegionId: string | null }) {
+function ZoomToCadaster({ selectedRegionId, zoomRequestId }: { selectedRegionId: string | null; zoomRequestId: number }) {
   const map = useMap();
   const selectedFeature = useMemo(() => {
     if (!selectedRegionId) return null;
@@ -106,7 +107,7 @@ function ZoomToCadaster({ selectedRegionId }: { selectedRegionId: string | null 
         padding: [36, 36]
       });
     }
-  }, [map, selectedFeature]);
+  }, [map, selectedFeature, zoomRequestId]);
 
   return null;
 }
