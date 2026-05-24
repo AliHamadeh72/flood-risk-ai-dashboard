@@ -18,6 +18,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - Recharts visualizations
 - Static JSON prediction data for GitHub Pages deployment
 - Python ML pipeline in `ml/`
+- Open-Meteo cadaster weather pipeline in `ml/fetch_open_meteo_cadasters.py`
 - RAG document and TF-IDF retrieval utilities in `rag/`
 - Optional FastAPI backend in `backend/`
 - GitHub Actions workflow for frontend deployment
@@ -44,6 +45,9 @@ Planned and scaffolded sources:
   - `T2M`
   - `WS10M`
 - Local region GeoJSON for selected Lebanon areas
+- Lebanon cadaster shapefile expected under `C:\Users\Mohammad Mahdi\Documents\Cadasters`
+- Cadaster shapefile must include `ACS_Code`
+- Open-Meteo forecast and archive APIs for cadaster-level weather
 - Demo terrain features in `data/processed/region_static_features.csv`
 - SRTM elevation and slope features can replace demo terrain values later
 - GloFAS / Copernicus flood data can be added later for validation or hazard layers
@@ -53,6 +57,7 @@ Planned and scaffolded sources:
 Pipeline scripts:
 
 - `ml/fetch_nasa_power.py`: fetches NASA POWER daily weather data
+- `ml/fetch_open_meteo_cadasters.py`: reads the cadaster shapefile, reprojects to EPSG:4326, calculates representative points, calls Open-Meteo, caches responses, and exports weather CSVs keyed by `ACS_Code`
 - `ml/build_features.py`: builds rainfall, humidity, temperature, wind, terrain, and risk-label features
 - `ml/train_model.py`: trains a `RandomForestClassifier`
 - `ml/predict_latest.py`: exports latest predictions to CSV and JSON
@@ -69,6 +74,25 @@ Generated artifacts:
 - `ml/model/metrics.json`
 
 The current demo model uses transparent rule-based labels for portfolio purposes. Replace labels with observed flood-impact data for production-grade modeling.
+
+## Cadaster Open-Meteo Pipeline
+
+The cadaster weather script supports:
+
+- `forecast` mode using the Open-Meteo forecast API
+- `historical` mode using the Open-Meteo archive API
+- cached API responses in `data/raw/open_meteo_cache/`
+- rate limiting between requests
+- CSV output with `ACS_Code`, latitude, longitude, date/time, precipitation, humidity, temperature, wind speed, and soil moisture columns when available
+
+Example commands:
+
+```bash
+python ml/fetch_open_meteo_cadasters.py --mode forecast
+python ml/fetch_open_meteo_cadasters.py --mode historical --start-date 2024-01-01 --end-date 2024-01-31
+```
+
+Error handling covers missing shapefiles, missing `ACS_Code`, missing CRS, API failures, and unavailable required variables.
 
 ## RAG Flow
 
@@ -123,6 +147,8 @@ Main dashboard sections:
 - Searchable prediction table
 - RAG chatbot
 - Model information panel
+
+Cadasters or regions without calculated predictions render in grey. Existing sample prediction rows keep the same project colors: Low green, Medium orange, and High red.
 
 For GitHub Pages, `frontend/vite.config.ts` currently uses:
 

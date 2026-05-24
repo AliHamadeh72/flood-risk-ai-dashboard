@@ -7,6 +7,7 @@ This project is a decision-support prototype. It is not an official emergency wa
 ## What It Includes
 
 - Python data pipeline for NASA POWER weather ingestion
+- Python pipeline for Lebanon cadaster weather ingestion from Open-Meteo
 - Feature engineering for rainfall, humidity, wind, temperature, elevation, and slope
 - Random Forest flood-risk classifier with Low, Medium, and High labels
 - Prediction exports to CSV and JSON
@@ -60,6 +61,28 @@ python rag/build_rag_docs.py
 python ml/fetch_nasa_power.py --start 20240101 --end 20240523
 ```
 
+`ml/fetch_open_meteo_cadasters.py` reads the Lebanon cadaster shapefile, reprojects it to EPSG:4326, calculates representative points, and fetches weather for each `ACS_Code` from Open-Meteo.
+
+Forecast mode:
+
+```bash
+python ml/fetch_open_meteo_cadasters.py --mode forecast
+```
+
+Historical mode:
+
+```bash
+python ml/fetch_open_meteo_cadasters.py --mode historical --start-date 2024-01-01 --end-date 2024-01-31
+```
+
+The default cadaster folder is:
+
+```text
+C:\Users\Mohammad Mahdi\Documents\Cadasters
+```
+
+The script caches API responses under `data/raw/open_meteo_cache/`, rate-limits requests, and writes CSV output under `data/raw/open_meteo/`.
+
 ### 2. Frontend
 
 ```bash
@@ -79,6 +102,7 @@ If your repository has a different name, update that value.
 ## Data Sources
 
 - NASA POWER daily meteorological API for precipitation, humidity, temperature, and wind speed.
+- Open-Meteo forecast/archive APIs for cadaster-level precipitation, relative humidity, temperature, wind speed, and available soil moisture variables.
 - Local GeoJSON region boundaries in `data/geo/regions.geojson`.
 - Terrain features are represented in `data/processed/region_static_features.csv`; these can be replaced with SRTM-derived elevation and slope.
 - GloFAS/Copernicus can be added later as a validation or hazard-reference layer.
@@ -138,3 +162,4 @@ Endpoints:
 - GitHub Pages cannot run Python model inference, FastAPI, MongoDB, or secret-backed AI calls.
 - Current boundaries and terrain values are demo-ready; replace them with official cadasters and SRTM-derived features for production-quality geospatial work.
 - The project is educational and analytical, not an official flood-warning product.
+- Cadasters without calculated predictions are displayed in grey on the map; sample prediction records keep the existing Low, Medium, and High colors.

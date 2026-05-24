@@ -6,5 +6,6 @@ __pycache__/
 node_modules/
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
+data/raw/open_meteo_cache/
 ml/model/*.joblib
 rag/vector_store/*.joblib

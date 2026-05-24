@@ -9,12 +9,16 @@ const colors: Record<RiskLabel, string> = {
 };
 
 type RegionProps = {
-  region_id: string;
-  region_name: string;
+  region_id?: string;
+  region_name?: string;
+  ACS_Code?: string;
+  Cadaster?: string;
+  name?: string;
 };
 
 export default function MapView({ predictions }: { predictions: Prediction[] }) {
   const byRegion = new Map(predictions.map((item) => [item.region_id, item]));
+  const byCadaster = new Map(predictions.map((item) => [item.region_id, item]));
 
   return (
     <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
@@ -23,17 +27,21 @@ export default function MapView({ predictions }: { predictions: Prediction[] }) 
         <GeoJSON
           data={regions as never}
           style={(feature) => {
-            const prediction = byRegion.get(feature?.properties.region_id ?? "");
-            const color = prediction ? colors[prediction.risk_label] : "#64748b";
+            const properties = feature?.properties as RegionProps | undefined;
+            const featureId = properties?.region_id ?? properties?.ACS_Code ?? "";
+            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
+            const color = prediction ? colors[prediction.risk_label] : "#94a3b8";
             return { color, fillColor: color, fillOpacity: 0.55, weight: 2 };
           }}
           onEachFeature={(feature, layer) => {
             const properties = feature.properties as RegionProps;
-            const prediction = byRegion.get(properties.region_id);
+            const featureId = properties.region_id ?? properties.ACS_Code ?? "";
+            const label = properties.region_name ?? properties.Cadaster ?? properties.name ?? properties.ACS_Code ?? "Uncalculated cadaster";
+            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
             layer.bindPopup(
               prediction
                 ? `<strong>${prediction.region_name}</strong><br/>Risk: ${prediction.risk_label}<br/>7-day rainfall: ${prediction.rainfall_7d} mm<br/>${prediction.recommended_action}`
-                : properties.region_name
+                : `<strong>${label}</strong><br/>Risk not calculated yet`
             );
           }}
         />
@@ -45,6 +53,10 @@ export default function MapView({ predictions }: { predictions: Prediction[] }) 
             {label}
           </span>
         ))}
+        <span className="inline-flex items-center gap-2">
+          <span className="h-3 w-3 rounded-sm bg-slate-400" />
+          Uncalculated
+        </span>
       </div>
     </div>
   );

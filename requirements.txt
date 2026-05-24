@@ -4,6 +4,9 @@ requests
 scikit-learn
 joblib
 matplotlib
+geopandas
+shapely
+tqdm
 fastapi
 uvicorn
 python-dotenv
