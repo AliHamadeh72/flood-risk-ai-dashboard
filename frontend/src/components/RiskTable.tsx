@@ -35,6 +35,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
               <th className="px-4 py-3">Region</th>
               <th className="px-4 py-3">Risk</th>
               <th className="px-4 py-3">7-day rain</th>
+              <th className="px-4 py-3">River flow</th>
               <th className="px-4 py-3">Humidity</th>
               <th className="px-4 py-3">Drivers</th>
               <th className="px-4 py-3">Action</th>
@@ -48,6 +49,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
                   <span className={`rounded-md px-2 py-1 text-xs font-semibold ring-1 ${badgeClass[item.risk_label]}`}>{item.risk_label}</span>
                 </td>
                 <td className="px-4 py-3">{item.rainfall_7d} mm</td>
+                <td className="px-4 py-3">{item.river_discharge_ratio ? `${item.river_discharge_ratio.toFixed(2)}x` : "n/a"}</td>
                 <td className="px-4 py-3">{item.humidity_avg_7d}%</td>
                 <td className="max-w-xs px-4 py-3 text-slate-600">{item.main_drivers}</td>
                 <td className="max-w-sm px-4 py-3 text-slate-600">{item.recommended_action}</td>

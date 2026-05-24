@@ -59,7 +59,7 @@ export default function MapView({ predictions, selectedRegionId, zoomRequestId, 
             const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
             layer.bindPopup(
               prediction
-                ? `<strong>${prediction.region_name}</strong><br/>Risk: ${prediction.risk_label}<br/>7-day rainfall: ${prediction.rainfall_7d} mm<br/>${prediction.recommended_action}`
+                ? `<strong>${prediction.region_name}</strong><br/>Risk: ${prediction.risk_label}<br/>7-day rainfall: ${prediction.rainfall_7d} mm<br/>River discharge: ${prediction.river_discharge_ratio ? `${prediction.river_discharge_ratio.toFixed(2)}x mean` : "n/a"}<br/>${prediction.recommended_action}`
                 : `<strong>${label}</strong><br/>Risk not calculated yet`
             );
             if (prediction) {

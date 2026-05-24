@@ -62,12 +62,12 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
       </div>
 
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Rainfall vs risk score</h3>
+        <h3 className="mb-3 text-sm font-semibold text-slate-700">River discharge vs risk score</h3>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart onClick={(state) => selectFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="rainfall_7d" name="7-day rainfall" unit=" mm" />
+              <XAxis dataKey="river_discharge_ratio" name="river discharge" unit="x" />
               <YAxis dataKey="risk_score" name="risk score" domain={[0, 1]} />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} />
               <Legend />

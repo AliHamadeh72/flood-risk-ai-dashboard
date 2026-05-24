@@ -8,6 +8,7 @@ This project is a decision-support prototype. It is not an official emergency wa
 
 - GeoPandas pipeline for reading Lebanon cadasters from a shapefile
 - Open-Meteo forecast/archive weather ingestion keyed by `ACS_Code`
+- Open-Meteo Flood API river-discharge ingestion keyed by `ACS_Code`
 - Local API response caching and request rate limiting
 - Cadaster GeoJSON export for the React map
 - Rule-based Open-Meteo flood-risk scoring into Low, Medium, and High
@@ -27,8 +28,11 @@ data/
   geo/
 ml/
   fetch_open_meteo_cadasters.py
+  fetch_open_meteo_flood_cadasters.py
   build_open_meteo_predictions.py
   export_cadaster_geojson.py
+  generate_open_meteo_test_data.py
+  validate_open_meteo_model.py
 rag/
 backend/
 frontend/
@@ -44,6 +48,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 python ml/fetch_open_meteo_cadasters.py --mode forecast --limit 1
+python ml/fetch_open_meteo_flood_cadasters.py --limit 1
 python ml/export_cadaster_geojson.py
 python ml/build_open_meteo_predictions.py
 python rag/build_rag_docs.py
@@ -82,6 +87,7 @@ http://localhost:5173/flood-risk-ai-dashboard/
 - Lebanon cadaster shapefile from `C:\Users\Mohammad Mahdi\Documents\Cadasters`
 - Open-Meteo forecast API for current forecast data
 - Open-Meteo archive API for historical training or analysis data
+- Open-Meteo Flood API for daily river discharge data
 
 Weather variables:
 
@@ -90,6 +96,51 @@ Weather variables:
 - temperature
 - wind speed
 - soil moisture when available
+- river discharge and discharge ratio when Flood API output is available
+
+## Risk Formula
+
+The current transparent scoring rule combines weather and flood pressure:
+
+```text
+score =
+  (rainfall_7d / 80) * 0.38
++ (humidity_avg_7d / 100) * 0.17
++ (soil_moisture_component / 45) * 0.15
++ discharge_component * 0.30
+```
+
+Where:
+
+```text
+soil_moisture_component = min(soil_moisture_avg_7d * 100, 45)
+discharge_component = min(river_discharge_ratio, 2.0) / 2.0
+river_discharge_ratio = river_discharge_max_7d / river_discharge_mean_7d
+```
+
+Labels:
+
+```text
+High: rainfall_7d >= 60 OR river_discharge_ratio >= 1.35 OR score >= 0.72
+Medium: rainfall_7d >= 25 OR river_discharge_ratio >= 0.85 OR score >= 0.45
+Low: otherwise
+```
+
+## Validation Data
+
+Generate deterministic test data:
+
+```bash
+python ml/generate_open_meteo_test_data.py
+```
+
+Validate model labels and visualization coverage:
+
+```bash
+python ml/validate_open_meteo_model.py
+```
+
+The generated fixture includes one Low, one Medium, and one High cadaster so the map and charts can be visually checked across all risk colors.
 
 ## Map Behavior
 

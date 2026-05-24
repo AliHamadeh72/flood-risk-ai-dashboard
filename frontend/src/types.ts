@@ -18,6 +18,9 @@ export type Prediction = {
   slope_mean: number;
   distance_to_river_km: number;
   soil_moisture_avg_7d?: number | null;
+  river_discharge_max_7d?: number | null;
+  river_discharge_mean_7d?: number | null;
+  river_discharge_ratio?: number | null;
   risk_label: RiskLabel;
   risk_score: number;
   main_drivers: string;

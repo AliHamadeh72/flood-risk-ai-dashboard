@@ -17,6 +17,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - Recharts visualizations
 - Static JSON prediction data for GitHub Pages
 - Open-Meteo cadaster weather pipeline in `ml/fetch_open_meteo_cadasters.py`
+- Open-Meteo Flood API pipeline in `ml/fetch_open_meteo_flood_cadasters.py`
 - Cadaster GeoJSON export in `ml/export_cadaster_geojson.py`
 - Open-Meteo prediction builder in `ml/build_open_meteo_predictions.py`
 - RAG document and TF-IDF retrieval utilities in `rag/`
@@ -51,11 +52,16 @@ Scripts:
   - caches responses in `data/raw/open_meteo_cache/`
   - rate-limits requests
   - exports CSV rows keyed by `ACS_Code`
+- `ml/fetch_open_meteo_flood_cadasters.py`
+  - calls `https://flood-api.open-meteo.com/v1/flood`
+  - fetches daily `river_discharge`, `river_discharge_mean`, `river_discharge_max`, and `river_discharge_p75`
+  - writes cadaster flood CSV rows keyed by `ACS_Code`
 - `ml/export_cadaster_geojson.py`
   - exports frontend-ready cadaster GeoJSON to `frontend/src/data/cadasters.json`
   - also writes `data/geo/cadasters.geojson`
 - `ml/build_open_meteo_predictions.py`
   - aggregates Open-Meteo weather rows by `ACS_Code`
+  - joins Flood API river-discharge features when available
   - computes Low, Medium, or High risk labels
   - writes `data/predictions/risk_predictions.csv`
   - writes `data/predictions/risk_predictions.json`
@@ -65,9 +71,23 @@ Example commands:
 
 ```bash
 python ml/fetch_open_meteo_cadasters.py --mode forecast --limit 1
+python ml/fetch_open_meteo_flood_cadasters.py --limit 1
 python ml/fetch_open_meteo_cadasters.py --mode historical --start-date 2024-01-01 --end-date 2024-01-31
 python ml/export_cadaster_geojson.py
 python ml/build_open_meteo_predictions.py
+```
+
+## Validation Fixtures
+
+- `ml/generate_open_meteo_test_data.py` writes deterministic weather, flood, and expected-risk fixtures under `data/test/`.
+- `ml/validate_open_meteo_model.py` rebuilds predictions from those fixtures and checks expected labels.
+- The current fixture covers Low, Medium, and High, so it also validates visualization color coverage.
+
+Recent validation result:
+
+```text
+accuracy: 1.0
+distribution: Low=1, Medium=1, High=1
 ```
 
 ## Frontend Map

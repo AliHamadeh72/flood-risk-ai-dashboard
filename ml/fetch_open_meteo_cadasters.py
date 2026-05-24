@@ -75,6 +75,16 @@ def cache_key(params: dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def normalize_acs_code(value: object) -> str:
+    try:
+        number = float(value)
+        if number.is_integer():
+            return str(int(number))
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
 def request_open_meteo(url: str, params: dict[str, Any], cache_dir: Path) -> dict[str, Any]:
     cache_dir.mkdir(parents=True, exist_ok=True)
     key = cache_key({"url": url, "params": params})

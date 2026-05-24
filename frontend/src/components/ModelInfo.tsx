@@ -9,6 +9,7 @@ const features = [
   "temperature_avg_7d",
   "wind_avg_7d",
   "soil_moisture_avg_7d",
+  "river_discharge_ratio",
   "ACS_Code"
 ];
 
@@ -20,8 +21,8 @@ export default function ModelInfo() {
         <h2 className="text-lg font-semibold">Model Info</h2>
       </div>
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <Info label="Model type" value="Open-Meteo rule-based risk scoring" />
-        <Info label="Labeling" value="Cadaster weather thresholds" />
+        <Info label="Model type" value="Open-Meteo weather + flood scoring" />
+        <Info label="Labeling" value="Weather and river-discharge thresholds" />
         <Info label="Output classes" value="Low, Medium, High" />
         <Info label="Deployment mode" value="Static JSON on GitHub Pages" />
       </dl>
