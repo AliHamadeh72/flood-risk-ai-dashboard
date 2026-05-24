@@ -1,5 +1,5 @@
 import { GeoJSON, MapContainer, TileLayer } from "react-leaflet";
-import regions from "../data/regions";
+import cadasters from "../data/cadasters.json";
 import type { Prediction, RiskLabel } from "../types";
 
 const colors: Record<RiskLabel, string> = {
@@ -25,7 +25,7 @@ export default function MapView({ predictions }: { predictions: Prediction[] }) 
       <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[440px] w-full">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <GeoJSON
-          data={regions as never}
+          data={cadasters as never}
           style={(feature) => {
             const properties = feature?.properties as RegionProps | undefined;
             const featureId = properties?.region_id ?? properties?.ACS_Code ?? "";

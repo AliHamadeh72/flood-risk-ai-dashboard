@@ -8,9 +8,8 @@ const features = [
   "humidity_avg_7d",
   "temperature_avg_7d",
   "wind_avg_7d",
-  "elevation_mean",
-  "slope_mean",
-  "distance_to_river_km"
+  "soil_moisture_avg_7d",
+  "ACS_Code"
 ];
 
 export default function ModelInfo() {
@@ -21,8 +20,8 @@ export default function ModelInfo() {
         <h2 className="text-lg font-semibold">Model Info</h2>
       </div>
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <Info label="Model type" value="RandomForestClassifier baseline" />
-        <Info label="Labeling" value="Rule-based portfolio labels" />
+        <Info label="Model type" value="Open-Meteo rule-based risk scoring" />
+        <Info label="Labeling" value="Cadaster weather thresholds" />
         <Info label="Output classes" value="Low, Medium, High" />
         <Info label="Deployment mode" value="Static JSON on GitHub Pages" />
       </dl>
@@ -37,7 +36,7 @@ export default function ModelInfo() {
         </div>
       </div>
       <p className="mt-5 text-sm leading-6 text-slate-600">
-        The dashboard is designed for transparent portfolio demonstration. Replace demo terrain values with SRTM-derived statistics and validate labels with observed flood data before operational use.
+        The dashboard is designed for transparent portfolio demonstration. Cadasters without Open-Meteo calculations remain grey until weather rows are exported for their ACS_Code.
       </p>
     </section>
   );

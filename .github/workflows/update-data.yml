@@ -20,14 +20,12 @@ jobs:
           python-version: "3.11"
       - name: Install Python dependencies
         run: pip install -r requirements.txt
-      - name: Build features, train, predict, and rebuild RAG docs
+      - name: Build Open-Meteo predictions and rebuild RAG docs
         run: |
-          python ml/build_features.py
-          python ml/train_model.py
-          python ml/predict_latest.py
+          python ml/build_open_meteo_predictions.py
           python rag/build_rag_docs.py
       - name: Commit updated data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Update flood-risk predictions"
-          file_pattern: "data/processed/features.csv data/predictions/risk_predictions.csv data/predictions/risk_predictions.json frontend/src/data/risk_predictions.json rag/vector_store/rag_documents.json ml/model/feature_columns.json ml/model/metrics.json"
+          file_pattern: "data/predictions/risk_predictions.csv data/predictions/risk_predictions.json frontend/src/data/risk_predictions.json rag/vector_store/rag_documents.json"

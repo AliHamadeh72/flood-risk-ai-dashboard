@@ -1,38 +1,8 @@
 [
   {
-    "id": "LB-SAI-001",
-    "region_name": "Saida Coastal Basin",
-    "date": "2026-05-23",
-    "text": "Region: Saida Coastal Basin. Date: 2026-05-23. Predicted flood risk: Medium. Risk score: 0.92. Main drivers: lower weekly rainfall; low elevation; low slope. 7-day rainfall is 32.27 mm, humidity is 73.33%, elevation mean is 24 m, slope mean is 2.0. Recommended action: Monitor low-lying roads and keep drainage crews on standby."
-  },
-  {
-    "id": "LB-TRI-001",
-    "region_name": "Tripoli Coastal Plain",
-    "date": "2026-05-23",
-    "text": "Region: Tripoli Coastal Plain. Date: 2026-05-23. Predicted flood risk: Medium. Risk score: 0.68. Main drivers: lower weekly rainfall; low elevation; low slope; close river proximity. 7-day rainfall is 22.18 mm, humidity is 69.09%, elevation mean is 18 m, slope mean is 1.4. Recommended action: Monitor low-lying roads and keep drainage crews on standby."
-  },
-  {
-    "id": "LB-JBE-001",
-    "region_name": "Jbeil Hills",
-    "date": "2026-05-23",
-    "text": "Region: Jbeil Hills. Date: 2026-05-23. Predicted flood risk: Low. Risk score: 1.0. Main drivers: lower weekly rainfall. 7-day rainfall is 9.44 mm, humidity is 63.93%, elevation mean is 380 m, slope mean is 9.6. Recommended action: Continue routine monitoring and review rainfall trend updates."
-  },
-  {
-    "id": "LB-BEY-001",
-    "region_name": "Beirut River Area",
-    "date": "2026-05-23",
-    "text": "Region: Beirut River Area. Date: 2026-05-23. Predicted flood risk: Medium. Risk score: 0.92. Main drivers: lower weekly rainfall; low elevation; low slope; close river proximity. 7-day rainfall is 19.95 mm, humidity is 65.29%, elevation mean is 28 m, slope mean is 1.8. Recommended action: Monitor low-lying roads and keep drainage crews on standby."
-  },
-  {
-    "id": "LB-TYR-001",
-    "region_name": "Tyre Coastal Lowlands",
-    "date": "2026-05-23",
-    "text": "Region: Tyre Coastal Lowlands. Date: 2026-05-23. Predicted flood risk: High. Risk score: 1.0. Main drivers: moderate 7-day rainfall; low elevation; low slope; close river proximity. 7-day rainfall is 44.07 mm, humidity is 73.61%, elevation mean is 12 m, slope mean is 1.2. Recommended action: Prioritize drainage inspection, field monitoring, and public advisory preparation."
-  },
-  {
-    "id": "LB-ZAH-001",
-    "region_name": "Zahle Valley",
-    "date": "2026-05-23",
-    "text": "Region: Zahle Valley. Date: 2026-05-23. Predicted flood risk: Low. Risk score: 1.0. Main drivers: lower weekly rainfall. 7-day rainfall is 0.0 mm, humidity is 59.21%, elevation mean is 940 m, slope mean is 6.8. Recommended action: Continue routine monitoring and review rainfall trend updates."
+    "id": "35237",
+    "region_name": "Cadaster 35237",
+    "date": "2026-05-30",
+    "text": "Region: Cadaster 35237. Date: 2026-05-30. Predicted flood risk: Low. Risk score: 0.25. Main drivers: low 7-day Open-Meteo precipitation; soil moisture available. 7-day rainfall is 0.6 mm, humidity is 78.19%, temperature is 20.77 C, wind speed is 11.34 m/s. Recommended action: Continue routine monitoring and review rainfall trend updates."
   }
 ]

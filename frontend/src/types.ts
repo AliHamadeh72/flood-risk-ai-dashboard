@@ -17,6 +17,7 @@ export type Prediction = {
   elevation_mean: number;
   slope_mean: number;
   distance_to_river_km: number;
+  soil_moisture_avg_7d?: number | null;
   risk_label: RiskLabel;
   risk_score: number;
   main_drivers: string;

@@ -24,7 +24,7 @@ function App() {
             <div>
               <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">Flood Risk AI Dashboard</h1>
               <p className="mt-1 max-w-3xl text-sm text-slate-600">
-                Static GitHub Pages demo powered by precomputed model outputs and grounded local retrieval.
+                Cadaster-level flood-risk view powered by Open-Meteo weather data and grounded local retrieval.
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600">
@@ -51,7 +51,7 @@ function App() {
         <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
         <Kpi title="Highest-risk region" value={highest.region_name} detail={`${Math.round(highest.risk_score * 100)}% model confidence`} />
         <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
-        <Kpi title="Weather source" value="NASA POWER" detail="Near-real-time public data pipeline" />
+        <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">

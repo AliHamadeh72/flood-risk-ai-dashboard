@@ -1,41 +1,35 @@
 # AI-Powered Flood Risk Forecasting Dashboard with RAG Chatbot
 
-Portfolio project for forecasting flood risk across selected Lebanon regions using public weather data, engineered terrain features, a machine learning classifier, and a grounded retrieval chatbot.
+Portfolio project for visualizing cadaster-level flood-risk indicators in Lebanon using a local cadaster shapefile, Open-Meteo weather data, and a grounded retrieval chatbot.
 
 This project is a decision-support prototype. It is not an official emergency warning system and should not be used as the only source for public-safety decisions.
 
 ## What It Includes
 
-- Python data pipeline for NASA POWER weather ingestion
-- Python pipeline for Lebanon cadaster weather ingestion from Open-Meteo
-- Feature engineering for rainfall, humidity, wind, temperature, elevation, and slope
-- Random Forest flood-risk classifier with Low, Medium, and High labels
+- GeoPandas pipeline for reading Lebanon cadasters from a shapefile
+- Open-Meteo forecast/archive weather ingestion keyed by `ACS_Code`
+- Local API response caching and request rate limiting
+- Cadaster GeoJSON export for the React map
+- Rule-based Open-Meteo flood-risk scoring into Low, Medium, and High
 - Prediction exports to CSV and JSON
 - RAG document generation and local retrieval utilities
-- Static React dashboard for GitHub Pages
-- Local chatbot prototype that answers from exported project records
-- Optional FastAPI backend scaffold for a full-stack version
-- GitHub Actions workflow for frontend deployment
+- React dashboard with map, charts, table, and chatbot
+- Optional FastAPI backend scaffold
+- GitHub Pages deployment workflow
 
 ## Project Structure
 
 ```text
 data/
-  raw/
-  processed/
+  raw/open_meteo/
+  raw/open_meteo_cache/
   predictions/
   geo/
 ml/
-  fetch_nasa_power.py
-  build_features.py
-  train_model.py
-  predict_latest.py
-  evaluate_model.py
-  model/
+  fetch_open_meteo_cadasters.py
+  build_open_meteo_predictions.py
+  export_cadaster_geojson.py
 rag/
-  build_rag_docs.py
-  build_vector_index.py
-  retrieve_context.py
 backend/
 frontend/
 .github/workflows/
@@ -49,24 +43,10 @@ frontend/
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python ml/build_features.py
-python ml/train_model.py
-python ml/predict_latest.py
+python ml/fetch_open_meteo_cadasters.py --mode forecast --limit 1
+python ml/export_cadaster_geojson.py
+python ml/build_open_meteo_predictions.py
 python rag/build_rag_docs.py
-```
-
-`ml/fetch_nasa_power.py` can fetch public NASA POWER data when you are online:
-
-```bash
-python ml/fetch_nasa_power.py --start 20240101 --end 20240523
-```
-
-`ml/fetch_open_meteo_cadasters.py` reads the Lebanon cadaster shapefile, reprojects it to EPSG:4326, calculates representative points, and fetches weather for each `ACS_Code` from Open-Meteo.
-
-Forecast mode:
-
-```bash
-python ml/fetch_open_meteo_cadasters.py --mode forecast
 ```
 
 Historical mode:
@@ -81,56 +61,56 @@ The default cadaster folder is:
 C:\Users\Mohammad Mahdi\Documents\Cadasters
 ```
 
-The script caches API responses under `data/raw/open_meteo_cache/`, rate-limits requests, and writes CSV output under `data/raw/open_meteo/`.
+The shapefile must contain `ACS_Code`. The pipeline reprojects it to `EPSG:4326`, calculates representative points, calls Open-Meteo, and writes weather rows to `data/raw/open_meteo/`.
 
 ### 2. Frontend
 
 ```bash
 cd frontend
-npm install
-npm run dev
+corepack pnpm install
+corepack pnpm run dev
 ```
 
-For GitHub Pages, `frontend/vite.config.ts` uses:
+Open:
 
-```ts
-base: "/flood-risk-ai-dashboard/"
+```text
+http://localhost:5173/flood-risk-ai-dashboard/
 ```
-
-If your repository has a different name, update that value.
 
 ## Data Sources
 
-- NASA POWER daily meteorological API for precipitation, humidity, temperature, and wind speed.
-- Open-Meteo forecast/archive APIs for cadaster-level precipitation, relative humidity, temperature, wind speed, and available soil moisture variables.
-- Local GeoJSON region boundaries in `data/geo/regions.geojson`.
-- Terrain features are represented in `data/processed/region_static_features.csv`; these can be replaced with SRTM-derived elevation and slope.
-- GloFAS/Copernicus can be added later as a validation or hazard-reference layer.
+- Lebanon cadaster shapefile from `C:\Users\Mohammad Mahdi\Documents\Cadasters`
+- Open-Meteo forecast API for current forecast data
+- Open-Meteo archive API for historical training or analysis data
 
-## Model
+Weather variables:
 
-The baseline model is a `RandomForestClassifier`. For the portfolio version, labels are generated using a transparent rule:
+- precipitation
+- relative humidity
+- temperature
+- wind speed
+- soil moisture when available
 
-- High risk: high recent rainfall plus low elevation or low slope
-- Medium risk: moderate rainfall or moderate terrain vulnerability
-- Low risk: low rainfall with safer terrain features
+## Map Behavior
 
-Saved artifacts:
+The map renders the full cadaster layer from `frontend/src/data/cadasters.json`.
 
-- `ml/model/flood_risk_model.joblib`
-- `ml/model/feature_columns.json`
-- `ml/model/metrics.json`
+- Cadasters with Open-Meteo predictions use the project risk colors:
+  - Low = green
+  - Medium = orange
+  - High = red
+- Cadasters without calculated weather/risk output render grey.
 
 ## RAG Chatbot
 
-The static frontend chatbot performs local keyword retrieval over `risk_predictions.json`. The Python RAG utilities generate grounded text documents from prediction rows and provide a TF-IDF retrieval prototype.
+The chatbot answers from exported prediction records and RAG documents.
 
 Rules:
 
 - Answers use only retrieved project records.
 - Missing data is reported as unavailable.
 - Recommendations are practical planning suggestions, not emergency instructions.
-- API keys must stay in the backend only.
+- API keys must stay in backend environment variables only.
 
 ## Optional Backend
 
@@ -153,13 +133,13 @@ Endpoints:
 
 1. Push this repo to GitHub.
 2. In repository settings, set Pages source to GitHub Actions.
-3. Update `frontend/vite.config.ts` if the repository name is not `flood-risk-ai-dashboard`.
+3. Keep `frontend/vite.config.ts` base set to `/flood-risk-ai-dashboard/`.
 4. The workflow in `.github/workflows/deploy-frontend.yml` builds and publishes `frontend/dist`.
 
 ## Limitations
 
-- NASA POWER is near-real-time, not instant live weather.
-- GitHub Pages cannot run Python model inference, FastAPI, MongoDB, or secret-backed AI calls.
-- Current boundaries and terrain values are demo-ready; replace them with official cadasters and SRTM-derived features for production-quality geospatial work.
+- GitHub Pages cannot run Python, FastAPI, model inference, or secret-backed AI calls.
+- Static deployment uses precomputed JSON outputs.
+- The included sample Open-Meteo CSV currently covers one cadaster for demonstration.
+- Full-country cadaster refreshes should be run locally or on a backend/scheduled worker because they require many API calls.
 - The project is educational and analytical, not an official flood-warning product.
-- Cadasters without calculated predictions are displayed in grey on the map; sample prediction records keep the existing Low, Medium, and High colors.

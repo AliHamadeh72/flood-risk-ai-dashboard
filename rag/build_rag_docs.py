@@ -16,10 +16,10 @@ def row_to_doc(row: pd.Series) -> dict[str, str]:
         f"Region: {row.region_name}. Date: {row.date}. Predicted flood risk: {row.risk_label}. "
         f"Risk score: {row.risk_score}. Main drivers: {row.main_drivers}. "
         f"7-day rainfall is {row.rainfall_7d} mm, humidity is {row.humidity_avg_7d}%, "
-        f"elevation mean is {row.elevation_mean} m, slope mean is {row.slope_mean}. "
+        f"temperature is {row.temperature_avg_7d} C, wind speed is {row.wind_avg_7d} m/s. "
         f"Recommended action: {row.recommended_action}"
     )
-    return {"id": row.region_id, "region_name": row.region_name, "date": row.date, "text": text}
+    return {"id": str(row.region_id), "region_name": row.region_name, "date": row.date, "text": text}
 
 
 def main() -> None:
