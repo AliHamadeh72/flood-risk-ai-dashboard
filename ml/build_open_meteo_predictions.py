@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = ROOT / "data" / "raw" / "open_meteo" / "cadaster_weather_forecast.csv"
+DEFAULT_CADASTERS = ROOT / "data" / "geo" / "cadasters.geojson"
 PREDICTIONS_DIR = ROOT / "data" / "predictions"
 FRONTEND_DATA_DIR = ROOT / "frontend" / "src" / "data"
 
@@ -54,10 +56,26 @@ def risk_from_weather(row: pd.Series) -> tuple[str, float, str, str]:
     return label, round(score, 2), "; ".join(drivers), action
 
 
-def build_predictions(input_csv: Path) -> pd.DataFrame:
+def load_cadaster_names(cadasters_geojson: Path) -> dict[str, str]:
+    if not cadasters_geojson.exists():
+        return {}
+
+    data = json.loads(cadasters_geojson.read_text(encoding="utf-8"))
+    names: dict[str, str] = {}
+    for feature in data.get("features", []):
+        properties = feature.get("properties", {})
+        acs_code = normalize_acs_code(properties.get("ACS_Code") or properties.get("region_id"))
+        name = properties.get("Muni") or properties.get("region_name") or properties.get("District") or properties.get("GOV")
+        if acs_code and name:
+            names[acs_code] = str(name)
+    return names
+
+
+def build_predictions(input_csv: Path, cadasters_geojson: Path) -> pd.DataFrame:
     if not input_csv.exists():
         raise FileNotFoundError(f"Open-Meteo cadaster weather CSV not found: {input_csv}")
 
+    cadaster_names = load_cadaster_names(cadasters_geojson)
     weather = pd.read_csv(input_csv)
     required = {"ACS_Code", "latitude", "longitude", "date_time", "precipitation", "relative_humidity_2m", "temperature_2m", "wind_speed_10m"}
     missing = required.difference(weather.columns)
@@ -79,7 +97,7 @@ def build_predictions(input_csv: Path) -> pd.DataFrame:
         last_24h = group.tail(24)
         row = {
             "region_id": acs_code,
-            "region_name": f"Cadaster {acs_code}",
+            "region_name": cadaster_names.get(acs_code, f"Cadaster {acs_code}"),
             "date": latest["date_time"].max().strftime("%Y-%m-%d"),
             "latitude": round(float(group["latitude"].iloc[-1]), 6),
             "longitude": round(float(group["longitude"].iloc[-1]), 6),
@@ -109,9 +127,10 @@ def build_predictions(input_csv: Path) -> pd.DataFrame:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build dashboard risk predictions from Open-Meteo cadaster weather CSV.")
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
+    parser.add_argument("--cadasters-geojson", type=Path, default=DEFAULT_CADASTERS)
     args = parser.parse_args()
 
-    predictions = build_predictions(args.input)
+    predictions = build_predictions(args.input, args.cadasters_geojson)
     PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
     FRONTEND_DATA_DIR.mkdir(parents=True, exist_ok=True)
     csv_output = PREDICTIONS_DIR / "risk_predictions.csv"

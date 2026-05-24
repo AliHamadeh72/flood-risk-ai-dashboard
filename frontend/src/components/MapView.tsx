@@ -31,7 +31,13 @@ export default function MapView({ predictions }: { predictions: Prediction[] }) 
             const featureId = properties?.region_id ?? properties?.ACS_Code ?? "";
             const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
             const color = prediction ? colors[prediction.risk_label] : "#94a3b8";
-            return { color, fillColor: color, fillOpacity: 0.55, weight: 2 };
+            return {
+              color,
+              fillColor: color,
+              fillOpacity: prediction ? 0.28 : 0.16,
+              opacity: prediction ? 0.7 : 0.45,
+              weight: prediction ? 1.2 : 0.6
+            };
           }}
           onEachFeature={(feature, layer) => {
             const properties = feature.properties as RegionProps;
