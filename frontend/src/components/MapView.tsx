@@ -98,7 +98,13 @@ function ZoomToCadaster({ selectedRegionId }: { selectedRegionId: string | null 
     if (!selectedFeature) return;
     const bounds = L.geoJSON(selectedFeature as never).getBounds();
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { maxZoom: 13, padding: [32, 32] });
+      map.flyToBounds(bounds, {
+        animate: true,
+        duration: 1.35,
+        easeLinearity: 0.2,
+        maxZoom: 13,
+        padding: [36, 36]
+      });
     }
   }, [map, selectedFeature]);
 
