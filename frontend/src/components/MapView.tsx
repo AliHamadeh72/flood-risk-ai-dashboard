@@ -6,9 +6,9 @@ import type { MapMode, Prediction, RainySeasonRecord, RiskLabel } from "../types
 import { summarizeRainySeason } from "../utils/rainySeason";
 
 const colors: Record<RiskLabel, string> = {
-  Low: "#287b53",
-  Medium: "#d98c20",
-  High: "#c94132"
+  Low: "#80DEEA",
+  Medium: "#0288D1",
+  High: "#01579B"
 };
 
 type RegionProps = {
