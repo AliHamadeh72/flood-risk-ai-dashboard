@@ -41,7 +41,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
       : predictions.find((item) => item.region_id === selectedRegionId)?.region_name;
 
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
       <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[440px] w-full">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} />
@@ -55,7 +55,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
             const rainySummary = rainyByRegion.get(featureId);
             const isSelected = selectedRegionId === featureId;
             const layerRisk = mapMode === "rainy" ? rainySummary?.risk_label : prediction?.risk_label;
-            const color = layerRisk ? colors[layerRisk] : "#94a3b8";
+            const color = layerRisk ? colors[layerRisk] : "#DBEAFE";
             return {
               color,
               fillColor: color,
@@ -83,7 +83,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           }}
         />
       </MapContainer>
-      <div className="flex flex-wrap gap-3 border-t border-slate-200 px-4 py-3 text-sm">
+      <div className="flex flex-wrap gap-3 border-t border-bluewave/40 px-4 py-3 text-sm">
         {Object.entries(colors).map(([label, color]) => (
           <span key={label} className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded-sm" style={{ background: color }} />
@@ -91,11 +91,11 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           </span>
         ))}
         <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm bg-slate-400" />
+          <span className="h-3 w-3 rounded-sm bg-panel ring-1 ring-bluewave" />
           Uncalculated
         </span>
         {selectedName && <span className="font-medium text-river">Selected: {selectedName}</span>}
-        <span className="font-medium text-slate-600">{mapMode === "rainy" ? "Showing rainy-season flood risk" : "Showing current forecast risk"}</span>
+        <span className="font-medium text-ink/75">{mapMode === "rainy" ? "Showing rainy-season flood risk" : "Showing current forecast risk"}</span>
       </div>
     </div>
   );

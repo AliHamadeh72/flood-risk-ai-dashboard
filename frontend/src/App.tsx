@@ -54,17 +54,17 @@ function App() {
           </div>
         </div>
       )}
-      <main className={`min-h-screen bg-[#edf2ef] text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
-      <header className="border-b border-slate-200 bg-white">
+      <main className={`min-h-screen bg-[#60A5FA] text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
+      <header className="border-b border-bluewave/40 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">Flood Risk AI Dashboard</h1>
-              <p className="mt-1 max-w-3xl text-sm text-slate-600">
+              <p className="mt-1 max-w-3xl text-sm text-ink/75">
                 Cadaster-level flood-risk view powered by Open-Meteo weather data and grounded local retrieval.
               </p>
             </div>
-            <div className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600">
+            <div className="rounded-md border border-bluewave/50 bg-panel px-3 py-2 text-sm text-ink">
               Latest update: <span className="font-semibold text-ink">{latestDate}</span>
             </div>
           </div>
@@ -75,7 +75,7 @@ function App() {
               ["table", "Table", Table2],
               ["chatbot", "Chatbot", MessageSquare]
             ].map(([href, label, Icon]) => (
-              <a key={href as string} href={`#${href}`} className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-panel px-3 py-2 font-medium hover:bg-white">
+              <a key={href as string} href={`#${href}`} className="inline-flex items-center gap-2 rounded-md border border-bluewave/50 bg-panel px-3 py-2 font-medium text-ink hover:bg-river hover:text-white">
                 <Icon className="h-4 w-4" />
                 {label as string}
               </a>
@@ -102,7 +102,7 @@ function App() {
             <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-river hover:text-river"
+              className="inline-flex items-center gap-2 rounded-md border border-bluewave/50 bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-river hover:bg-river hover:text-white"
               onClick={toggleMapMode}
             >
               <ArrowLeftRight className="h-4 w-4" />
@@ -148,15 +148,17 @@ function App() {
 }
 
 function Kpi({ title, value, detail, onClick }: { title: string; value: string; detail: string; onClick?: () => void }) {
-  const className = `rounded-md border border-slate-200 bg-white p-4 text-left shadow-sm ${
+  const className = `kpi-slide-wrapper rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 text-left shadow-sm ${
     onClick ? "cursor-pointer transition hover:border-river hover:shadow-md focus:outline-none focus:ring-2 focus:ring-river" : ""
   }`;
   const content = (
-    <>
-      <p className="text-sm font-medium text-slate-500">{title}</p>
+    <div className="overflow-hidden">
+      <div className="kpi-slide-text">
+      <p className="text-sm font-medium text-ink/65">{title}</p>
       <p className="mt-2 text-xl font-semibold leading-tight text-ink">{value}</p>
-      <p className="mt-2 text-sm text-slate-600">{detail}</p>
-    </>
+      <p className="mt-2 text-sm text-ink/75">{detail}</p>
+      </div>
+    </div>
   );
 
   return onClick ? (

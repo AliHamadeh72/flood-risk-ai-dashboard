@@ -4,12 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#182026",
-        panel: "#f7f9f8",
-        river: "#1d7088",
-        alert: "#c94132",
-        amber: "#d98c20",
-        safe: "#287b53"
+        ink: "#1F2937",
+        panel: "#DBEAFE",
+        river: "#38BDF8",
+        bluewave: "#60A5FA",
+        alert: "#1F2937",
+        amber: "#60A5FA",
+        safe: "#38BDF8"
       }
     }
   },
