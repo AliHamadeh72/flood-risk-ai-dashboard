@@ -3,11 +3,14 @@ export type MapMode = "current" | "rainy";
 
 export type RainySeasonRecord = {
   ACS_Code: string;
+  region_name?: string;
   month: string;
   rainfall_mm: number;
   avg_humidity: number;
   river_discharge: number;
+  average_risk_score?: number;
   risk_label: RiskLabel;
+  data_status?: "observed" | "estimated";
 };
 
 export type Prediction = {

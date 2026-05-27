@@ -21,6 +21,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - Open-Meteo Flood API pipeline in `ml/fetch_open_meteo_flood_cadasters.py`
 - Cadaster GeoJSON export in `ml/export_cadaster_geojson.py`
 - Open-Meteo prediction builder in `ml/build_open_meteo_predictions.py`
+- All-cadaster rainy-season risk builder in `ml/build_rainy_season_risk.py`
 - RAG document and TF-IDF retrieval utilities in `rag/`
 - Optional FastAPI backend in `backend/`
 
@@ -67,6 +68,12 @@ Scripts:
   - writes `data/predictions/risk_predictions.csv`
   - writes `data/predictions/risk_predictions.json`
   - writes `frontend/src/data/risk_predictions.json`
+- `ml/build_rainy_season_risk.py`
+  - computes rainy-season risk with the same weather and flood scoring formula
+  - uses historical Open-Meteo weather/flood CSVs when available
+  - fills missing cadaster codes with deterministic seasonal estimates so the full cadaster map can be visualized
+  - writes `data/predictions/rainy_season_history.csv`
+  - writes `frontend/src/data/rainy_season_history.json`
 
 Example commands:
 
@@ -76,6 +83,7 @@ python ml/fetch_open_meteo_flood_cadasters.py --limit 1
 python ml/fetch_open_meteo_cadasters.py --mode historical --start-date 2024-01-01 --end-date 2024-01-31
 python ml/export_cadaster_geojson.py
 python ml/build_open_meteo_predictions.py
+python ml/build_rainy_season_risk.py
 ```
 
 ## Validation Fixtures
@@ -83,7 +91,7 @@ python ml/build_open_meteo_predictions.py
 - `ml/generate_open_meteo_test_data.py` writes deterministic weather, flood, and expected-risk fixtures under `data/test/`.
 - `ml/validate_open_meteo_model.py` rebuilds predictions from those fixtures and checks expected labels.
 - The current fixture covers Low, Medium, and High, so it also validates visualization color coverage.
-- `frontend/src/data/rainy_season_history.json` is generated from those fixtures for the rainy-season trend chart.
+- `frontend/src/data/rainy_season_history.json` is generated for all exported cadasters by `ml/build_rainy_season_risk.py`.
 
 Recent validation result:
 

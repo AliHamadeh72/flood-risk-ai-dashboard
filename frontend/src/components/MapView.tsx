@@ -3,6 +3,7 @@ import L from "leaflet";
 import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
 import cadasters from "../data/cadasters.json";
 import type { MapMode, Prediction, RainySeasonRecord, RiskLabel } from "../types";
+import { summarizeRainySeason } from "../utils/rainySeason";
 
 const colors: Record<RiskLabel, string> = {
   Low: "#287b53",
@@ -27,25 +28,13 @@ type MapViewProps = {
   onSelectRegion: (regionId: string) => void;
 };
 
-type RainySeasonSummary = {
-  region_id: string;
-  region_name: string;
-  risk_label: RiskLabel;
-  rainfall_mm: number;
-  river_discharge: number;
-  peak_month: string;
-};
-
-const riskRank: Record<RiskLabel, number> = {
-  Low: 1,
-  Medium: 2,
-  High: 3
-};
-
 export default function MapView({ predictions, rainySeasonRecords, mapMode, selectedRegionId, zoomRequestId, onSelectRegion }: MapViewProps) {
   const byRegion = new Map(predictions.map((item) => [item.region_id, item]));
   const byCadaster = new Map(predictions.map((item) => [item.region_id, item]));
-  const rainyByRegion = useMemo(() => buildRainySeasonSummaries(predictions, rainySeasonRecords), [predictions, rainySeasonRecords]);
+  const rainyByRegion = useMemo(
+    () => new Map(summarizeRainySeason(predictions, rainySeasonRecords).map((item) => [item.region_id, item])),
+    [predictions, rainySeasonRecords]
+  );
   const selectedName =
     mapMode === "rainy"
       ? rainyByRegion.get(selectedRegionId ?? "")?.region_name ?? predictions.find((item) => item.region_id === selectedRegionId)?.region_name
@@ -83,7 +72,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
             const rainySummary = rainyByRegion.get(featureId);
             layer.bindPopup(
               mapMode === "rainy" && rainySummary
-                ? `<strong>${rainySummary.region_name}</strong><br/>Rainy-season risk: ${rainySummary.risk_label}<br/>Rainy-season rainfall: ${rainySummary.rainfall_mm.toFixed(1)} mm<br/>Peak river flow: ${rainySummary.river_discharge.toFixed(1)} m3/s<br/>Peak month: ${rainySummary.peak_month}`
+                ? `<strong>${rainySummary.region_name}</strong><br/>Average rainy-season risk: ${rainySummary.risk_label}<br/>Average risk score: ${rainySummary.average_risk_score.toFixed(2)}<br/>Rainy-season rainfall: ${rainySummary.rainfall_mm.toFixed(1)} mm<br/>Peak river flow: ${rainySummary.river_discharge.toFixed(1)} m3/s<br/>Peak month: ${rainySummary.peak_month}`
                 : prediction
                 ? `<strong>${prediction.region_name}</strong><br/>Risk: ${prediction.risk_label}<br/>7-day rainfall: ${prediction.rainfall_7d} mm<br/>River discharge: ${prediction.river_discharge_ratio ? `${prediction.river_discharge_ratio.toFixed(2)}x mean` : "n/a"}<br/>${prediction.recommended_action}`
                 : `<strong>${label}</strong><br/>${mapMode === "rainy" ? "Rainy-season risk not calculated yet" : "Risk not calculated yet"}`
@@ -110,31 +99,6 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
       </div>
     </div>
   );
-}
-
-function buildRainySeasonSummaries(predictions: Prediction[], records: RainySeasonRecord[]) {
-  const names = new Map(predictions.map((item) => [item.region_id, item.region_name]));
-  const summaries = new Map<string, RainySeasonSummary>();
-
-  for (const record of records) {
-    const current = summaries.get(record.ACS_Code);
-    const currentRank = current ? riskRank[current.risk_label] : 0;
-    const recordRank = riskRank[record.risk_label];
-    const nextRainfall = (current?.rainfall_mm ?? 0) + record.rainfall_mm;
-    const peakFlow = Math.max(current?.river_discharge ?? 0, record.river_discharge);
-    const peakMonth = !current || record.river_discharge >= current.river_discharge ? record.month : current.peak_month;
-
-    summaries.set(record.ACS_Code, {
-      region_id: record.ACS_Code,
-      region_name: names.get(record.ACS_Code) ?? `Cadaster ${record.ACS_Code}`,
-      risk_label: recordRank >= currentRank ? record.risk_label : current?.risk_label ?? record.risk_label,
-      rainfall_mm: nextRainfall,
-      river_discharge: peakFlow,
-      peak_month: peakMonth
-    });
-  }
-
-  return summaries;
 }
 
 function ZoomToCadaster({ selectedRegionId, zoomRequestId }: { selectedRegionId: string | null; zoomRequestId: number }) {

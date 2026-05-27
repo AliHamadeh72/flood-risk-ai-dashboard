@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, ArrowLeftRight, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
 import rainySeasonHistory from "./data/rainy_season_history.json";
@@ -13,6 +13,7 @@ const data = predictions as Prediction[];
 const rainyData = rainySeasonHistory as RainySeasonRecord[];
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
@@ -21,18 +22,39 @@ function App() {
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
   const sortedDates = data.map((item) => item.date).sort();
   const latestDate = sortedDates[sortedDates.length - 1];
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsLoading(false), 700);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const selectRegion = (regionId: string) => {
-    setSelectedRegionId(regionId);
-    setZoomRequestId((current) => current + 1);
+    setSelectedRegionId((current) => {
+      if (current === regionId) return null;
+      setZoomRequestId((requestId) => requestId + 1);
+      return regionId;
+    });
   };
   const selectRainySeasonRegion = (regionId: string) => {
     setMapMode("rainy");
-    selectRegion(regionId);
+    setSelectedRegionId((current) => {
+      if (current === regionId) return null;
+      setZoomRequestId((requestId) => requestId + 1);
+      return regionId;
+    });
   };
+  const clearSelection = () => setSelectedRegionId(null);
   const toggleMapMode = () => setMapMode((current) => (current === "current" ? "rainy" : "current"));
 
   return (
-    <main className="min-h-screen bg-[#edf2ef] text-ink">
+    <>
+      {isLoading && (
+        <div className="app-loading" role="status" aria-live="polite">
+          <div className="loader-card">
+            <div className="loader-ring" />
+          </div>
+        </div>
+      )}
+      <main className={`min-h-screen bg-[#edf2ef] text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -98,7 +120,13 @@ function App() {
         </div>
         <div>
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
-          <RiskCharts predictions={data} selectedRegionId={selectedRegionId} onSelectRegion={selectRegion} onSelectRainySeasonRegion={selectRainySeasonRegion} />
+          <RiskCharts
+            predictions={data}
+            selectedRegionId={selectedRegionId}
+            onSelectRegion={selectRegion}
+            onSelectRainySeasonRegion={selectRainySeasonRegion}
+            onClearSelection={clearSelection}
+          />
         </div>
       </section>
 
@@ -114,7 +142,8 @@ function App() {
         </div>
         <ModelInfo />
       </section>
-    </main>
+      </main>
+    </>
   );
 }
 

@@ -3,9 +3,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  ComposedChart,
   Legend,
-  Line,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -15,6 +13,7 @@ import {
 } from "recharts";
 import rainySeasonHistory from "../data/rainy_season_history.json";
 import type { Prediction, RainySeasonRecord, RiskLabel } from "../types";
+import { summarizeRainySeason } from "../utils/rainySeason";
 
 const colors: Record<RiskLabel, string> = {
   Low: "#287b53",
@@ -27,6 +26,7 @@ type RiskChartsProps = {
   selectedRegionId: string | null;
   onSelectRegion: (regionId: string) => void;
   onSelectRainySeasonRegion: (regionId: string) => void;
+  onClearSelection: () => void;
 };
 
 type ChartClickState = {
@@ -38,7 +38,7 @@ type ChartClickState = {
   }>;
 };
 
-export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion, onSelectRainySeasonRegion }: RiskChartsProps) {
+export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion, onSelectRainySeasonRegion, onClearSelection }: RiskChartsProps) {
   const cadasterBars = [...predictions]
     .sort((a, b) => b.risk_score - a.risk_score)
     .map((item) => ({
@@ -46,26 +46,29 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
       chartLabel: item.region_name.length > 14 ? `${item.region_name.slice(0, 14)}...` : item.region_name
     }));
   const topRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 10);
-  const rainyHistory = (rainySeasonHistory as RainySeasonRecord[])
-    .filter((item) => !selectedRegionId || item.ACS_Code === selectedRegionId)
-    .map((item) => ({
-      ...item,
-      monthLabel: item.month.slice(5),
-      region_name: predictions.find((prediction) => prediction.region_id === item.ACS_Code)?.region_name ?? item.ACS_Code
-    }));
+  const rainySeasonRisk = summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]);
+  const topRainySeasonRisk = rainySeasonRisk.slice(0, 5);
+  const selectedRainySeasonRisk = rainySeasonRisk.find((item) => item.region_id === selectedRegionId);
+  const rainySeasonChartData =
+    selectedRainySeasonRisk && !topRainySeasonRisk.some((item) => item.region_id === selectedRainySeasonRisk.region_id)
+      ? [...topRainySeasonRisk, { ...selectedRainySeasonRisk, chartLabel: `Selected: ${selectedRainySeasonRisk.chartLabel}` }]
+      : topRainySeasonRisk;
   const selectFromChartState = (state: ChartClickState | undefined) => {
     const regionId = state?.activePayload?.[0]?.payload?.region_id;
     if (regionId) onSelectRegion(regionId);
   };
   const selectRainySeasonFromChartState = (state: ChartClickState | undefined) => {
-    const regionId = state?.activePayload?.[0]?.payload?.ACS_Code;
+    const regionId = state?.activePayload?.[0]?.payload?.region_id;
     if (regionId) onSelectRainySeasonRegion(regionId);
   };
 
   return (
     <div className="grid gap-4">
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Risk by calculated cadaster</h3>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-slate-700">Risk by calculated cadaster</h3>
+          {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
+        </div>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={cadasterBars} onClick={(state) => selectFromChartState(state as ChartClickState)}>
@@ -99,7 +102,7 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
               <YAxis dataKey="risk_score" name="risk score" domain={[0, 1]} />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} />
               <Legend />
-              <Scatter name="Cadasters" data={topRisk}>
+              <Scatter name="Cadasters" data={topRisk} isAnimationActive animationDuration={950} animationEasing="ease-out">
                 {topRisk.map((item) => (
                   <Cell
                     key={item.region_id}
@@ -116,45 +119,52 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
       </div>
 
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">Rainy-season historical trend</h3>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-slate-700">Average rainy-season flood risk</h3>
+          {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
+        </div>
+        <p className="mb-3 text-xs text-slate-500">Top five cadasters by average rainy-season risk, plus the selected map cadaster when different.</p>
         <div className="h-60">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={rainyHistory} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
+            <BarChart data={rainySeasonChartData} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="rain" name="rainfall" unit=" mm" />
-              <YAxis yAxisId="flow" orientation="right" name="river flow" unit=" m3/s" />
+              <XAxis dataKey="chartLabel" interval={0} tick={{ fontSize: 11 }} />
+              <YAxis domain={[0, 1]} />
               <Tooltip />
-              <Legend />
               <Bar
-                yAxisId="rain"
-                dataKey="rainfall_mm"
-                name="Monthly rainfall"
+                dataKey="average_risk_score"
+                name="Average flood risk"
                 radius={[4, 4, 0, 0]}
                 isAnimationActive
                 animationDuration={1100}
                 animationEasing="ease-out"
               >
-                {rainyHistory.map((item) => (
-                  <Cell key={`${item.ACS_Code}-${item.month}`} fill={colors[item.risk_label]} cursor="pointer" />
+                {rainySeasonChartData.map((item) => (
+                  <Cell
+                    key={item.region_id}
+                    fill={colors[item.risk_label]}
+                    stroke={selectedRegionId === item.region_id ? "#182026" : colors[item.risk_label]}
+                    strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
+                    cursor="pointer"
+                  />
                 ))}
               </Bar>
-              <Line
-                yAxisId="flow"
-                type="monotone"
-                dataKey="river_discharge"
-                name="River flow"
-                stroke="#1f5673"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                isAnimationActive
-                animationDuration={1100}
-                animationEasing="ease-out"
-              />
-            </ComposedChart>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
     </div>
+  );
+}
+
+function ClearSelectionButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rounded-md border border-slate-200 bg-panel px-2 py-1 text-xs font-medium text-slate-600 transition hover:border-river hover:bg-white hover:text-river"
+      onClick={onClick}
+    >
+      Clear selection
+    </button>
   );
 }

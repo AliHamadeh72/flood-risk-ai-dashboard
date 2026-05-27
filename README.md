@@ -31,6 +31,7 @@ ml/
   fetch_open_meteo_cadasters.py
   fetch_open_meteo_flood_cadasters.py
   build_open_meteo_predictions.py
+  build_rainy_season_risk.py
   export_cadaster_geojson.py
   generate_open_meteo_test_data.py
   validate_open_meteo_model.py
@@ -52,6 +53,7 @@ python ml/fetch_open_meteo_cadasters.py --mode forecast --limit 1
 python ml/fetch_open_meteo_flood_cadasters.py --limit 1
 python ml/export_cadaster_geojson.py
 python ml/build_open_meteo_predictions.py
+python ml/build_rainy_season_risk.py
 python rag/build_rag_docs.py
 ```
 
@@ -73,8 +75,8 @@ The shapefile must contain `ACS_Code`. The pipeline reprojects it to `EPSG:4326`
 
 ```bash
 cd frontend
-corepack pnpm install
-corepack pnpm run dev
+npm install
+npm run dev
 ```
 
 Open:
@@ -141,7 +143,7 @@ Validate model labels and visualization coverage:
 python ml/validate_open_meteo_model.py
 ```
 
-The generated fixture includes one Low, one Medium, and one High cadaster so the map and charts can be visually checked across all risk colors. It also writes `frontend/src/data/rainy_season_history.json` for the dashboard's rainy-season historical chart.
+The generated fixture includes one Low, one Medium, and one High cadaster so the map and charts can be visually checked across all risk colors. `ml/build_rainy_season_risk.py` builds `frontend/src/data/rainy_season_history.json` for all exported cadaster codes using observed historical weather/flood rows when available and deterministic seasonal estimates for missing cadasters.
 
 ## Map Behavior
 
