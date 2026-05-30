@@ -18,7 +18,8 @@ function App() {
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const highRisk = data.filter((item) => item.risk_label === "High");
-  const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
+  const positiveRisk = data.filter((item) => item.risk_score > 0);
+  const highest = [...positiveRisk].sort((a, b) => b.risk_score - a.risk_score)[0];
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
   const sortedDates = data.map((item) => item.date).sort();
   const latestDate = sortedDates[sortedDates.length - 1];
@@ -93,9 +94,9 @@ function App() {
         <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
         <Kpi
           title="Highest-risk region"
-          value={highest.region_name}
-          detail={`${Math.round(highest.risk_score * 100)}% model confidence`}
-          onClick={() => selectRegion(highest.region_id)}
+          value={highest ? highest.region_name : "None"}
+          detail={highest ? `${Math.round(highest.risk_score * 100)}% model confidence` : "No cadaster has current flood risk"}
+          onClick={highest ? () => selectRegion(highest.region_id) : undefined}
         />
         <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />

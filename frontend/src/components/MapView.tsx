@@ -56,10 +56,12 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
             const isSelected = selectedRegionId === featureId;
             const layerRisk = mapMode === "rainy" ? rainySummary?.risk_label : prediction?.risk_label;
             const color = layerRisk ? colors[layerRisk] : "#94a3b8";
+            const fillOpacity = layerRisk === "Low" ? 0.1 : layerRisk ? 0.28 : 0.16;
+            const selectedFillOpacity = layerRisk === "Low" ? 0.22 : 0.42;
             return {
               color,
               fillColor: color,
-              fillOpacity: isSelected ? 0.42 : layerRisk ? 0.28 : 0.16,
+              fillOpacity: isSelected ? selectedFillOpacity : fillOpacity,
               opacity: isSelected ? 1 : layerRisk ? 0.7 : 0.45,
               weight: isSelected ? 3 : layerRisk ? 1.2 : 0.6
             };
