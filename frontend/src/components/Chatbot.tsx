@@ -7,6 +7,35 @@ type Message = {
   content: string;
 };
 
+const greetingTerms = new Set(["hello", "hi", "hey", "salam", "bonjour"]);
+
+function isGreeting(query: string): boolean {
+  const normalized = normalizeText(query);
+  return normalized.split(" ").some((term) => greetingTerms.has(term));
+}
+
+function isGeneralFloodGuidance(query: string): boolean {
+  const normalized = normalizeText(query);
+  const asksForGuidance = /\b(what|how|should|prepare|before|during|after|safety|instruction|instructions|advice|tips|guide|guidance)\b/.test(normalized);
+  return asksForGuidance && /\b(flood|floods|flooding|evacuat|water|rain)\b/.test(normalized);
+}
+
+function introAnswer(): string {
+  return "Hello, I am the flood-risk dashboard assistant. I can answer questions about cadaster risk records, zoom the map to a named cadaster, and share general Red Cross-style flood safety guidance. This project is a planning prototype, not an official emergency warning system.";
+}
+
+function redCrossFloodGuidance(): string {
+  return [
+    "General flood safety guidance, based on American Red Cross recommendations:",
+    "",
+    "Before a flood: know your local flood risk, prepare an emergency kit, keep important documents protected, and follow alerts or evacuation instructions from authorities.",
+    "During a flood: move to higher ground if instructed, avoid walking or driving through floodwater, and stay away from downed power lines or fast-moving water.",
+    "After a flood: return only when officials say it is safe, avoid contaminated floodwater, wear protective clothing during cleanup, and check for structural, electrical, or gas hazards before entering damaged buildings.",
+    "",
+    "For immediate danger, follow local emergency services and official evacuation orders."
+  ].join("\n");
+}
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -39,6 +68,13 @@ function scoreRecord(query: string, record: Prediction): number {
 }
 
 function answerFromRecords(query: string, predictions: Prediction[]): string {
+  if (isGreeting(query)) {
+    return introAnswer();
+  }
+  if (isGeneralFloodGuidance(query)) {
+    return redCrossFloodGuidance();
+  }
+
   const mentioned = findMentionedCadaster(query, predictions);
   if (mentioned) {
     return `Based only on retrieved project records:\n${mentioned.region_name}: ${mentioned.risk_label} risk, ${mentioned.rainfall_7d} mm 7-day rainfall, risk score ${Math.round(mentioned.risk_score * 100)}%, drivers: ${mentioned.main_drivers}. Action: ${mentioned.recommended_action}\n\nI focused the map and charts on this cadaster. Use this for planning support only, not official emergency instructions.`;
@@ -89,6 +125,12 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
     const mentionedCadaster = findMentionedCadaster(question, predictions);
     if (mentionedCadaster) {
       onSelectRegion(mentionedCadaster.region_id);
+    }
+
+    if (isGreeting(question) || isGeneralFloodGuidance(question)) {
+      setMessages((current) => [...current, { role: "assistant", content: answerFromRecords(question, predictions) }]);
+      setIsSending(false);
+      return;
     }
 
     const backendUrl = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:8000";
