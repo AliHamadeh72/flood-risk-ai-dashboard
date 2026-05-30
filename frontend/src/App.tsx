@@ -136,17 +136,17 @@ function App() {
         </div>
       </section>
 
-      <section id="table" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
-        <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
-        <RiskTable predictions={data} />
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-        <div id="chatbot">
+      <section id="chatbot" className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div>
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
           <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
         </div>
         <ModelInfo />
+      </section>
+
+      <section id="table" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
+        <RiskTable predictions={data} />
       </section>
       </main>
     </>
