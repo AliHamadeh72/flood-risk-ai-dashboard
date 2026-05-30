@@ -122,6 +122,10 @@ Weather variables:
 The current transparent scoring rule combines weather and flood pressure:
 
 ```text
+if rainfall_7d == 0:
+  score = 0
+  label = Low
+
 score =
   (rainfall_7d / 80) * 0.38
 + (humidity_avg_7d / 100) * 0.17

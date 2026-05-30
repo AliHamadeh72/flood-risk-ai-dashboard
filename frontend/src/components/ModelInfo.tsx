@@ -16,10 +16,10 @@ export default function ModelInfo() {
       <div className="mt-5">
         <h3 className="text-sm font-semibold text-slate-700">Simplified risk formula</h3>
         <div className="mt-2 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-          <Info label="Score mix" value="38% rain, 17% humidity, 15% soil, 30% river flow" />
-          <Info label="High risk" value="Heavy rain, river flow >= 1.35x normal, or score >= 0.72" />
-          <Info label="Medium risk" value="Moderate rain, river flow >= 0.85x normal, or score >= 0.45" />
-          <Info label="Low risk" value="Below medium thresholds with routine monitoring" />
+          <Info label="No rain rule" value="0 mm 7-day rainfall sets flood risk to 0" />
+          <Info label="Score mix" value="When rain exists: 38% rain, 17% humidity, 15% soil, 30% river flow" />
+          <Info label="High risk" value="With rain: heavy rain, river flow >= 1.35x normal, or score >= 0.72" />
+          <Info label="Medium risk" value="With rain: moderate rain, river flow >= 0.85x normal, or score >= 0.45" />
         </div>
       </div>
       <p className="mt-5 text-sm leading-6 text-slate-600">

@@ -38,12 +38,28 @@ type ChartClickState = {
   }>;
 };
 
+type ChartPrediction = Prediction & {
+  chartLabel?: string;
+};
+
 export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion, onSelectRainySeasonRegion, onClearSelection }: RiskChartsProps) {
-  const cadasterBars = [...predictions]
+  const topCurrentRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
+  const selectedCurrentRisk = predictions.find((item) => item.region_id === selectedRegionId);
+  const cadasterBars: ChartPrediction[] =
+    selectedCurrentRisk && !topCurrentRisk.some((item) => item.region_id === selectedCurrentRisk.region_id)
+      ? [...topCurrentRisk, { ...selectedCurrentRisk, chartLabel: `Selected: ${selectedCurrentRisk.region_name}` }]
+      : topCurrentRisk;
+  const currentRiskChartData = cadasterBars
     .sort((a, b) => b.risk_score - a.risk_score)
     .map((item) => ({
       ...item,
-      chartLabel: item.region_name.length > 14 ? `${item.region_name.slice(0, 14)}...` : item.region_name
+      chartLabel: item.chartLabel
+        ? item.chartLabel.length > 18
+          ? `${item.chartLabel.slice(0, 18)}...`
+          : item.chartLabel
+        : item.region_name.length > 14
+          ? `${item.region_name.slice(0, 14)}...`
+          : item.region_name
     }));
   const topRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 10);
   const rainySeasonRisk = summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]);
@@ -66,18 +82,18 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
     <div className="grid gap-4">
       <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-700">Risk by calculated cadaster</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Top current-risk cadasters</h3>
           {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
         </div>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={cadasterBars} onClick={(state) => selectFromChartState(state as ChartClickState)}>
+            <BarChart data={currentRiskChartData} onClick={(state) => selectFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="chartLabel" interval={0} tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 1]} />
               <Tooltip />
               <Bar dataKey="risk_score" name="Risk score" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={900} animationEasing="ease-out">
-                {cadasterBars.map((item) => (
+                {currentRiskChartData.map((item) => (
                   <Cell
                     key={item.region_id}
                     fill={colors[item.risk_label]}

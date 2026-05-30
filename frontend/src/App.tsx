@@ -34,6 +34,11 @@ function App() {
       return regionId;
     });
   };
+  const focusCurrentRegion = (regionId: string) => {
+    setMapMode("current");
+    setSelectedRegionId(regionId);
+    setZoomRequestId((requestId) => requestId + 1);
+  };
   const selectRainySeasonRegion = (regionId: string) => {
     setMapMode("rainy");
     setSelectedRegionId((current) => {
@@ -138,7 +143,7 @@ function App() {
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
         <div id="chatbot">
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
-          <Chatbot predictions={data} />
+          <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
         </div>
         <ModelInfo />
       </section>

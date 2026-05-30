@@ -30,6 +30,9 @@ def risk_from_weather(row: pd.Series) -> tuple[str, float, str, str]:
     humidity = row["humidity_avg_7d"]
     soil_moisture = row.get("soil_moisture_avg_7d")
     discharge_ratio = row.get("river_discharge_ratio")
+    if rainfall <= 0:
+        return "Low", 0.0, "No rain over the last 7 days", "No flood-risk action is needed from rainfall-driven conditions."
+
     soil_component = 0 if pd.isna(soil_moisture) else min(float(soil_moisture) * 100, 45)
     discharge_component = 0 if pd.isna(discharge_ratio) else min(float(discharge_ratio), 2.0) / 2.0
     score = min(1.0, (rainfall / 80) * 0.38 + (humidity / 100) * 0.17 + (soil_component / 45) * 0.15 + discharge_component * 0.3)

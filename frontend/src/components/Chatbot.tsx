@@ -7,6 +7,31 @@ type Message = {
   content: string;
 };
 
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function findMentionedCadaster(query: string, predictions: Prediction[]): Prediction | null {
+  const normalizedQuery = ` ${normalizeText(query)} `;
+  const codeMatch = query.match(/\b\d{3,}\b/);
+  if (codeMatch) {
+    const byCode = predictions.find((record) => record.region_id === codeMatch[0]);
+    if (byCode) return byCode;
+  }
+
+  return [...predictions]
+    .sort((a, b) => b.region_name.length - a.region_name.length)
+    .find((record) => {
+      const normalizedName = normalizeText(record.region_name);
+      return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
+    }) ?? null;
+}
+
 function scoreRecord(query: string, record: Prediction): number {
   const terms = query.toLowerCase().split(/\W+/).filter(Boolean);
   const text = `${record.region_name} ${record.risk_label} ${record.main_drivers} ${record.recommended_action}`.toLowerCase();
@@ -14,6 +39,11 @@ function scoreRecord(query: string, record: Prediction): number {
 }
 
 function answerFromRecords(query: string, predictions: Prediction[]): string {
+  const mentioned = findMentionedCadaster(query, predictions);
+  if (mentioned) {
+    return `Based only on retrieved project records:\n${mentioned.region_name}: ${mentioned.risk_label} risk, ${mentioned.rainfall_7d} mm 7-day rainfall, risk score ${Math.round(mentioned.risk_score * 100)}%, drivers: ${mentioned.main_drivers}. Action: ${mentioned.recommended_action}\n\nI focused the map and charts on this cadaster. Use this for planning support only, not official emergency instructions.`;
+  }
+
   const matches = [...predictions]
     .map((record) => ({ record, score: scoreRecord(query, record) }))
     .filter((item) => item.score > 0)
@@ -36,7 +66,7 @@ function answerFromRecords(query: string, predictions: Prediction[]): string {
   return `Based only on retrieved project records:\n${contextLines}\n\nCurrent dataset summary: ${highRiskCount} of ${predictions.length} regions are High risk. Use this for planning support only, not official emergency instructions.`;
 }
 
-export default function Chatbot({ predictions }: { predictions: Prediction[] }) {
+export default function Chatbot({ predictions, onSelectRegion }: { predictions: Prediction[]; onSelectRegion: (regionId: string) => void }) {
   const starter = useMemo<Message[]>(
     () => [
       {
@@ -56,6 +86,10 @@ export default function Chatbot({ predictions }: { predictions: Prediction[] }) 
     setIsSending(true);
     setMessages((current) => [...current, { role: "user", content: question }]);
     setInput("");
+    const mentionedCadaster = findMentionedCadaster(question, predictions);
+    if (mentionedCadaster) {
+      onSelectRegion(mentionedCadaster.region_id);
+    }
 
     const backendUrl = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:8000";
     try {
