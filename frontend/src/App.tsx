@@ -5,7 +5,7 @@ import rainySeasonHistory from "./data/rainy_season_history.json";
 import Chatbot from "./components/Chatbot";
 import MapView from "./components/MapView";
 import ModelInfo from "./components/ModelInfo";
-import RiskCharts from "./components/RiskCharts";
+import RiskCharts, { RainySeasonRiskChart } from "./components/RiskCharts";
 import RiskTable from "./components/RiskTable";
 import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
@@ -102,7 +102,7 @@ function App() {
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] xl:grid-cols-[1.2fr_0.8fr_0.8fr] lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
         <div id="map" className="min-h-[440px]">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
@@ -132,11 +132,24 @@ function App() {
             onSelectRegion={selectRegion}
             onSelectRainySeasonRegion={selectRainySeasonRegion}
             onClearSelection={clearSelection}
+            includeRainySeason={false}
           />
         </div>
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
         <div id="chatbot">
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
           <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
+        </div>
+        <div>
+          <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Rainy Season" />
+          <RainySeasonRiskChart
+            predictions={data}
+            selectedRegionId={selectedRegionId}
+            onSelectRainySeasonRegion={selectRainySeasonRegion}
+            onClearSelection={clearSelection}
+          />
         </div>
       </section>
 

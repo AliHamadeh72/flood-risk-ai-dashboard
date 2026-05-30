@@ -27,6 +27,7 @@ type RiskChartsProps = {
   onSelectRegion: (regionId: string) => void;
   onSelectRainySeasonRegion: (regionId: string) => void;
   onClearSelection: () => void;
+  includeRainySeason?: boolean;
 };
 
 type ChartClickState = {
@@ -42,7 +43,14 @@ type ChartPrediction = Prediction & {
   chartLabel?: string;
 };
 
-export default function RiskCharts({ predictions, selectedRegionId, onSelectRegion, onSelectRainySeasonRegion, onClearSelection }: RiskChartsProps) {
+export default function RiskCharts({
+  predictions,
+  selectedRegionId,
+  onSelectRegion,
+  onSelectRainySeasonRegion,
+  onClearSelection,
+  includeRainySeason = true
+}: RiskChartsProps) {
   const topCurrentRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
   const selectedCurrentRisk = predictions.find((item) => item.region_id === selectedRegionId);
   const cadasterBars: ChartPrediction[] =
@@ -62,20 +70,9 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
           : item.region_name
     }));
   const topRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 10);
-  const rainySeasonRisk = summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]);
-  const topRainySeasonRisk = rainySeasonRisk.slice(0, 5);
-  const selectedRainySeasonRisk = rainySeasonRisk.find((item) => item.region_id === selectedRegionId);
-  const rainySeasonChartData =
-    selectedRainySeasonRisk && !topRainySeasonRisk.some((item) => item.region_id === selectedRainySeasonRisk.region_id)
-      ? [...topRainySeasonRisk, { ...selectedRainySeasonRisk, chartLabel: `Selected: ${selectedRainySeasonRisk.chartLabel}` }]
-      : topRainySeasonRisk;
   const selectFromChartState = (state: ChartClickState | undefined) => {
     const regionId = state?.activePayload?.[0]?.payload?.region_id;
     if (regionId) onSelectRegion(regionId);
-  };
-  const selectRainySeasonFromChartState = (state: ChartClickState | undefined) => {
-    const regionId = state?.activePayload?.[0]?.payload?.region_id;
-    if (regionId) onSelectRainySeasonRegion(regionId);
   };
 
   return (
@@ -134,40 +131,63 @@ export default function RiskCharts({ predictions, selectedRegionId, onSelectRegi
         </div>
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-700">Average rainy-season flood risk</h3>
-          {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
-        </div>
-        <p className="mb-3 text-xs text-slate-500">Top five cadasters by average rainy-season risk, plus the selected map cadaster when different.</p>
-        <div className="h-60">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rainySeasonChartData} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="chartLabel" interval={0} tick={{ fontSize: 11 }} />
-              <YAxis domain={[0, 1]} />
-              <Tooltip />
-              <Bar
-                dataKey="average_risk_score"
-                name="Average flood risk"
-                radius={[4, 4, 0, 0]}
-                isAnimationActive
-                animationDuration={1100}
-                animationEasing="ease-out"
-              >
-                {rainySeasonChartData.map((item) => (
-                  <Cell
-                    key={item.region_id}
-                    fill={colors[item.risk_label]}
-                    stroke={selectedRegionId === item.region_id ? "#182026" : colors[item.risk_label]}
-                    strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
-                    cursor="pointer"
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      {includeRainySeason && (
+        <RainySeasonRiskChart
+          predictions={predictions}
+          selectedRegionId={selectedRegionId}
+          onSelectRainySeasonRegion={onSelectRainySeasonRegion}
+          onClearSelection={onClearSelection}
+        />
+      )}
+    </div>
+  );
+}
+
+export function RainySeasonRiskChart({
+  predictions,
+  selectedRegionId,
+  onSelectRainySeasonRegion,
+  onClearSelection
+}: Pick<RiskChartsProps, "predictions" | "selectedRegionId" | "onSelectRainySeasonRegion" | "onClearSelection">) {
+  const rainySeasonRisk = summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]);
+  const topRainySeasonRisk = rainySeasonRisk.slice(0, 5);
+  const selectedRainySeasonRisk = rainySeasonRisk.find((item) => item.region_id === selectedRegionId);
+  const rainySeasonChartData =
+    selectedRainySeasonRisk && !topRainySeasonRisk.some((item) => item.region_id === selectedRainySeasonRisk.region_id)
+      ? [...topRainySeasonRisk, { ...selectedRainySeasonRisk, chartLabel: `Selected: ${selectedRainySeasonRisk.chartLabel}` }]
+      : topRainySeasonRisk;
+  const selectRainySeasonFromChartState = (state: ChartClickState | undefined) => {
+    const regionId = state?.activePayload?.[0]?.payload?.region_id;
+    if (regionId) onSelectRainySeasonRegion(regionId);
+  };
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-slate-700">Average rainy-season flood risk</h3>
+        {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
+      </div>
+      <p className="mb-3 text-xs text-slate-500">Top five cadasters by average rainy-season risk, plus the selected map cadaster when different.</p>
+      <div className="h-60">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rainySeasonChartData} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="chartLabel" interval={0} tick={{ fontSize: 11 }} />
+            <YAxis domain={[0, 1]} />
+            <Tooltip />
+            <Bar dataKey="average_risk_score" name="Average flood risk" radius={[4, 4, 0, 0]} isAnimationActive animationDuration={1100} animationEasing="ease-out">
+              {rainySeasonChartData.map((item) => (
+                <Cell
+                  key={item.region_id}
+                  fill={colors[item.risk_label]}
+                  stroke={selectedRegionId === item.region_id ? "#182026" : colors[item.risk_label]}
+                  strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
+                  cursor="pointer"
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
