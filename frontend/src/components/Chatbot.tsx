@@ -36,6 +36,16 @@ function redCrossFloodGuidance(): string {
   ].join("\n");
 }
 
+function rephrasedRecordAnswer(record: Prediction): string {
+  return [
+    `For ${record.region_name}, the current project data shows ${record.risk_label} flood risk with a risk score of ${Math.round(record.risk_score * 100)}%.`,
+    `The 7-day rainfall total is ${record.rainfall_7d} mm. Main drivers: ${record.main_drivers}.`,
+    `Suggested planning action: ${record.recommended_action}`,
+    "",
+    "I focused the map and charts on this cadaster. Use this for planning support only, not official emergency instructions."
+  ].join("\n");
+}
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -77,7 +87,7 @@ function answerFromRecords(query: string, predictions: Prediction[]): string {
 
   const mentioned = findMentionedCadaster(query, predictions);
   if (mentioned) {
-    return `Based only on retrieved project records:\n${mentioned.region_name}: ${mentioned.risk_label} risk, ${mentioned.rainfall_7d} mm 7-day rainfall, risk score ${Math.round(mentioned.risk_score * 100)}%, drivers: ${mentioned.main_drivers}. Action: ${mentioned.recommended_action}\n\nI focused the map and charts on this cadaster. Use this for planning support only, not official emergency instructions.`;
+    return rephrasedRecordAnswer(mentioned);
   }
 
   const matches = [...predictions]
@@ -99,7 +109,7 @@ function answerFromRecords(query: string, predictions: Prediction[]): string {
     )
     .join("\n");
 
-  return `Based only on retrieved project records:\n${contextLines}\n\nCurrent dataset summary: ${highRiskCount} of ${predictions.length} regions are High risk. Use this for planning support only, not official emergency instructions.`;
+  return `Here is the relevant flood-risk information from the project records:\n${contextLines}\n\nCurrent dataset summary: ${highRiskCount} of ${predictions.length} regions are High risk. Use this for planning support only, not official emergency instructions.`;
 }
 
 export default function Chatbot({ predictions, onSelectRegion }: { predictions: Prediction[]; onSelectRegion: (regionId: string) => void }) {
