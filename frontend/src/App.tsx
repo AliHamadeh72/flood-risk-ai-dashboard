@@ -102,7 +102,7 @@ function App() {
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] xl:grid-cols-[1.2fr_0.8fr_0.8fr] lg:px-8">
         <div id="map" className="min-h-[440px]">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
@@ -124,7 +124,7 @@ function App() {
             onSelectRegion={selectRegion}
           />
         </div>
-        <div>
+        <div className="xl:max-h-[520px] xl:overflow-y-auto xl:pr-1">
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
           <RiskCharts
             predictions={data}
@@ -134,13 +134,13 @@ function App() {
             onClearSelection={clearSelection}
           />
         </div>
-      </section>
-
-      <section id="chatbot" className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-        <div>
+        <div id="chatbot">
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
           <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
         <ModelInfo />
       </section>
 
