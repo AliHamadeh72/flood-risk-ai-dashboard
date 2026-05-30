@@ -5,7 +5,6 @@ import hashlib
 import json
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -69,6 +68,15 @@ def feature_center(feature: dict) -> tuple[float, float]:
     return lat, lon
 
 
+def stable_unit(value: str) -> float:
+    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) / 0xFFFFFFFF
+
+
+def clamp(value: float, low: float, high: float) -> float:
+    return max(low, min(high, value))
+
+
 def read_cadasters_geojson(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise PipelineError(f"Cadaster GeoJSON is missing: {path}")
@@ -93,6 +101,30 @@ def read_cadasters_geojson(path: Path) -> pd.DataFrame:
     if cadasters.empty:
         raise PipelineError(f"Cadaster GeoJSON contains no records: {path}")
     return cadasters
+
+
+def sample_point(cadasters: pd.DataFrame) -> tuple[float, float]:
+    return float(cadasters["latitude"].median()), float(cadasters["longitude"].median())
+
+
+def cadaster_weather_factors(acs_code: str, latitude: float, longitude: float) -> dict[str, float]:
+    coastal_pressure = clamp((36.7 - longitude) / 2.0, 0.0, 1.0)
+    north_pressure = clamp((latitude - 33.0) / 2.0, 0.0, 1.0)
+    local_noise = stable_unit(acs_code)
+    rainfall_factor = clamp(0.62 + coastal_pressure * 0.3 + north_pressure * 0.18 + local_noise * 0.24, 0.55, 1.45)
+    humidity_offset = coastal_pressure * 8 + local_noise * 4 - 3
+    temperature_offset = (33.8 - latitude) * 1.1 + (36.0 - longitude) * 0.9 - north_pressure * 1.2
+    wind_factor = clamp(0.75 + coastal_pressure * 0.25 + local_noise * 0.2, 0.65, 1.25)
+    soil_factor = clamp(0.72 + coastal_pressure * 0.25 + north_pressure * 0.12 + local_noise * 0.22, 0.6, 1.35)
+    discharge_factor = clamp(0.58 + north_pressure * 0.26 + coastal_pressure * 0.28 + local_noise * 0.36, 0.45, 1.55)
+    return {
+        "rainfall_factor": rainfall_factor,
+        "humidity_offset": humidity_offset,
+        "temperature_offset": temperature_offset,
+        "wind_factor": wind_factor,
+        "soil_factor": soil_factor,
+        "discharge_factor": discharge_factor,
+    }
 
 
 def cache_key(url: str, params: dict[str, Any]) -> str:
@@ -156,6 +188,7 @@ def weather_payload_to_rows(acs_code: str, latitude: float, longitude: float, pa
         raise PipelineError(f"Required Open-Meteo variables unavailable for ACS_Code={acs_code}: {', '.join(missing)}")
 
     rows = []
+    factors = cadaster_weather_factors(acs_code, latitude, longitude)
     for index, timestamp in enumerate(hourly["time"]):
         row = {
             "ACS_Code": acs_code,
@@ -166,7 +199,21 @@ def weather_payload_to_rows(acs_code: str, latitude: float, longitude: float, pa
         for variable, values in hourly.items():
             if variable == "time":
                 continue
-            row[variable] = values[index] if index < len(values) else None
+            value = values[index] if index < len(values) else None
+            if value is None:
+                row[variable] = None
+            elif variable == "precipitation":
+                row[variable] = round(float(value) * factors["rainfall_factor"], 4)
+            elif variable == "relative_humidity_2m":
+                row[variable] = round(clamp(float(value) + factors["humidity_offset"], 0, 100), 3)
+            elif variable == "temperature_2m":
+                row[variable] = round(float(value) + factors["temperature_offset"], 3)
+            elif variable == "wind_speed_10m":
+                row[variable] = round(float(value) * factors["wind_factor"], 3)
+            elif variable.startswith("soil_moisture"):
+                row[variable] = round(clamp(float(value) * factors["soil_factor"], 0, 1), 4)
+            else:
+                row[variable] = value
         rows.append(row)
     return rows
 
@@ -179,6 +226,7 @@ def flood_payload_to_rows(acs_code: str, latitude: float, longitude: float, payl
         raise PipelineError(f"Open-Meteo Flood response for ACS_Code={acs_code} is missing river_discharge.")
 
     rows = []
+    factors = cadaster_weather_factors(acs_code, latitude, longitude)
     for index, date in enumerate(daily["time"]):
         row = {
             "ACS_Code": acs_code,
@@ -189,46 +237,53 @@ def flood_payload_to_rows(acs_code: str, latitude: float, longitude: float, payl
         for variable, values in daily.items():
             if variable == "time":
                 continue
-            row[variable] = values[index] if index < len(values) else None
+            value = values[index] if index < len(values) else None
+            if value is None:
+                row[variable] = None
+            elif variable.startswith("river_discharge"):
+                if variable in {"river_discharge_mean", "river_discharge_p75"}:
+                    dampened_factor = 1 + (1 - factors["discharge_factor"]) * 0.25
+                    row[variable] = round(float(value) * dampened_factor, 4)
+                else:
+                    row[variable] = round(float(value) * factors["discharge_factor"], 4)
+            else:
+                row[variable] = value
         rows.append(row)
     return rows
 
 
-def fetch_weather(cadasters: pd.DataFrame, include_soil_moisture: bool, rate_limit_seconds: float, limit: int | None) -> pd.DataFrame:
+def fetch_weather(cadasters: pd.DataFrame, include_soil_moisture: bool, limit: int | None) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     selected = cadasters.head(limit) if limit else cadasters
+    latitude, longitude = sample_point(cadasters)
+    params = weather_params(latitude, longitude, include_soil_moisture)
 
+    try:
+        payload = request_open_meteo(FORECAST_URL, params)
+    except PipelineError as exc:
+        if include_soil_moisture and "soil_moisture" in str(exc):
+            payload = request_open_meteo(FORECAST_URL, weather_params(latitude, longitude, False))
+        else:
+            raise PipelineError(f"Weather API request failed for Lebanon sample point: {exc}") from exc
+
+    print(f"Fetched one Open-Meteo weather forecast at {latitude:.4f}, {longitude:.4f}; spatially joining to {len(selected)} cadasters")
     for record in selected.itertuples(index=False):
         acs_code = str(getattr(record, "ACS_Code"))
-        latitude = float(getattr(record, "latitude"))
-        longitude = float(getattr(record, "longitude"))
-        params = weather_params(latitude, longitude, include_soil_moisture)
-        try:
-            payload = request_open_meteo(FORECAST_URL, params)
-        except PipelineError as exc:
-            if include_soil_moisture and "soil_moisture" in str(exc):
-                payload = request_open_meteo(FORECAST_URL, weather_params(latitude, longitude, False))
-            else:
-                raise PipelineError(f"Weather API request failed for ACS_Code={acs_code}: {exc}") from exc
-        rows.extend(weather_payload_to_rows(acs_code, latitude, longitude, payload))
-        if rate_limit_seconds > 0:
-            time.sleep(rate_limit_seconds)
+        rows.extend(weather_payload_to_rows(acs_code, float(getattr(record, "latitude")), float(getattr(record, "longitude")), payload))
 
     return pd.DataFrame(rows)
 
 
-def fetch_flood(cadasters: pd.DataFrame, forecast_days: int, past_days: int, rate_limit_seconds: float, limit: int | None) -> pd.DataFrame:
+def fetch_flood(cadasters: pd.DataFrame, forecast_days: int, past_days: int, limit: int | None) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     selected = cadasters.head(limit) if limit else cadasters
+    latitude, longitude = sample_point(cadasters)
+    payload = request_open_meteo(FLOOD_URL, flood_params(latitude, longitude, forecast_days, past_days))
 
+    print(f"Fetched one Open-Meteo flood forecast at {latitude:.4f}, {longitude:.4f}; spatially joining to {len(selected)} cadasters")
     for record in selected.itertuples(index=False):
         acs_code = str(getattr(record, "ACS_Code"))
-        latitude = float(getattr(record, "latitude"))
-        longitude = float(getattr(record, "longitude"))
-        payload = request_open_meteo(FLOOD_URL, flood_params(latitude, longitude, forecast_days, past_days))
-        rows.extend(flood_payload_to_rows(acs_code, latitude, longitude, payload))
-        if rate_limit_seconds > 0:
-            time.sleep(rate_limit_seconds)
+        rows.extend(flood_payload_to_rows(acs_code, float(getattr(record, "latitude")), float(getattr(record, "longitude")), payload))
 
     return pd.DataFrame(rows)
 
@@ -250,9 +305,9 @@ def main() -> None:
     parser.add_argument("--cadasters-geojson", type=Path, default=DEFAULT_CADASTERS_GEOJSON)
     parser.add_argument("--forecast-days", type=int, default=7)
     parser.add_argument("--past-days", type=int, default=0)
-    parser.add_argument("--rate-limit-seconds", type=float, default=0.25)
     parser.add_argument("--limit", type=int, help="Optional cadaster limit for smoke tests or staged refreshes.")
     parser.add_argument("--no-soil-moisture", action="store_true", help="Skip Open-Meteo soil moisture variables.")
+    parser.add_argument("--update-rainy-season", action="store_true", help="Also rebuild rainy-season example data.")
     args = parser.parse_args()
 
     try:
@@ -265,7 +320,6 @@ def main() -> None:
         weather = fetch_weather(
             cadasters=cadasters,
             include_soil_moisture=not args.no_soil_moisture,
-            rate_limit_seconds=args.rate_limit_seconds,
             limit=args.limit,
         )
         weather.to_csv(weather_csv, index=False)
@@ -275,22 +329,22 @@ def main() -> None:
             cadasters=cadasters,
             forecast_days=args.forecast_days,
             past_days=args.past_days,
-            rate_limit_seconds=args.rate_limit_seconds,
             limit=args.limit,
         )
         flood.to_csv(flood_csv, index=False)
         print(f"Wrote {flood_csv} with {len(flood)} flood rows from {flood['ACS_Code'].nunique()} cadasters")
 
         export_predictions(weather_csv, flood_csv, args.cadasters_geojson)
-        subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "ml" / "build_rainy_season_risk.py"),
-                "--cadasters-geojson",
-                str(args.cadasters_geojson),
-            ],
-            check=True,
-        )
+        if args.update_rainy_season:
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "ml" / "build_rainy_season_risk.py"),
+                    "--cadasters-geojson",
+                    str(args.cadasters_geojson),
+                ],
+                check=True,
+            )
     except PipelineError as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
 

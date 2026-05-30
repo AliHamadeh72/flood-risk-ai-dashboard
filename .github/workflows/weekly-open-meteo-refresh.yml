@@ -36,7 +36,7 @@ jobs:
 
       - name: Refresh weather, flood, and prediction data
         run: |
-          args=(--rate-limit-seconds 0.25)
+          args=()
           if [ -n "${{ inputs.cadaster_limit }}" ]; then
             args+=(--limit "${{ inputs.cadaster_limit }}")
           fi

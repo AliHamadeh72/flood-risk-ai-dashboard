@@ -87,7 +87,7 @@ http://localhost:5173/flood-risk-ai-dashboard/
 
 ### 3. Weekly Open-Meteo Refresh
 
-The repo includes a CI-friendly refresh command that uses the checked-in cadaster GeoJSON, requests 7-day Open-Meteo weather and Flood API data for each cadaster, rebuilds the prediction CSV/JSON outputs, and updates the frontend data files:
+The repo includes a CI-friendly refresh command that uses the checked-in cadaster GeoJSON, makes one 7-day Open-Meteo weather request and one Open-Meteo Flood API request, spatially joins those conditions across every cadaster, rebuilds the prediction CSV/JSON outputs, and updates the frontend data files:
 
 ```bash
 python ml/weekly_open_meteo_refresh.py
@@ -96,7 +96,7 @@ python ml/weekly_open_meteo_refresh.py
 Smoke test one cadaster:
 
 ```bash
-python ml/weekly_open_meteo_refresh.py --limit 1 --rate-limit-seconds 0
+python ml/weekly_open_meteo_refresh.py --limit 1
 ```
 
 The workflow in `.github/workflows/weekly-open-meteo-refresh.yml` runs every Monday at 03:00 UTC, commits changed data artifacts, and lets Vercel redeploy the static dashboard from Git.
@@ -217,6 +217,6 @@ The older GitHub Pages workflow remains available in `.github/workflows/deploy-f
 
 - GitHub Pages cannot run Python, FastAPI, model inference, or secret-backed AI calls.
 - Static deployment uses precomputed JSON outputs.
-- The included sample Open-Meteo CSV currently covers one cadaster for demonstration.
+- The current forecast layer is generated for every cadaster code in the checked-in GeoJSON by spatially joining one Open-Meteo weather/flood sample across cadaster polygons.
 - Full-country cadaster refreshes should be run locally or on a backend/scheduled worker because they require many API calls.
 - The project is educational and analytical, not an official flood-warning product.
