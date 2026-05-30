@@ -85,6 +85,22 @@ Open:
 http://localhost:5173/flood-risk-ai-dashboard/
 ```
 
+### 3. Weekly Open-Meteo Refresh
+
+The repo includes a CI-friendly refresh command that uses the checked-in cadaster GeoJSON, requests 7-day Open-Meteo weather and Flood API data for each cadaster, rebuilds the prediction CSV/JSON outputs, and updates the frontend data files:
+
+```bash
+python ml/weekly_open_meteo_refresh.py
+```
+
+Smoke test one cadaster:
+
+```bash
+python ml/weekly_open_meteo_refresh.py --limit 1 --rate-limit-seconds 0
+```
+
+The workflow in `.github/workflows/weekly-open-meteo-refresh.yml` runs every Monday at 03:00 UTC, commits changed data artifacts, and lets Vercel redeploy the static dashboard from Git.
+
 ## Data Sources
 
 - Lebanon cadaster shapefile from `C:\Users\Mohammad Mahdi\Documents\Cadasters`
@@ -185,10 +201,17 @@ Endpoints:
 
 ## Deployment
 
-1. Push this repo to GitHub.
-2. In repository settings, set Pages source to GitHub Actions.
-3. Keep `frontend/vite.config.ts` base set to `/flood-risk-ai-dashboard/`.
-4. The workflow in `.github/workflows/deploy-frontend.yml` builds and publishes `frontend/dist`.
+### Vercel
+
+1. Import this repository in Vercel.
+2. Keep the project root at the repository root.
+3. Vercel reads `vercel.json`, installs from `frontend/`, builds with `VITE_BASE_PATH=/`, and serves `frontend/dist`.
+4. Add your production domain in Vercel Project Settings > Domains, then point your DNS records to Vercel as instructed.
+5. Pushes to `main`, including weekly data-refresh commits, trigger a new production deployment when Vercel Git integration is enabled.
+
+### GitHub Pages
+
+The older GitHub Pages workflow remains available in `.github/workflows/deploy-frontend.yml`. It uses the default Vite base path `/flood-risk-ai-dashboard/`.
 
 ## Limitations
 
