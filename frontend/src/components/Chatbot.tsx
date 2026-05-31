@@ -7,45 +7,6 @@ type Message = {
   content: string;
 };
 
-const greetingTerms = new Set(["hello", "hi", "hey", "salam", "bonjour"]);
-
-function isGreeting(query: string): boolean {
-  const normalized = normalizeText(query);
-  return normalized.split(" ").some((term) => greetingTerms.has(term));
-}
-
-function isGeneralFloodGuidance(query: string): boolean {
-  const normalized = normalizeText(query);
-  const asksForGuidance = /\b(what|how|should|prepare|before|during|after|safety|instruction|instructions|advice|tips|guide|guidance)\b/.test(normalized);
-  return asksForGuidance && /\b(flood|floods|flooding|evacuat|water|rain)\b/.test(normalized);
-}
-
-function introAnswer(): string {
-  return "Hello, I am the flood-risk dashboard assistant. I can answer questions about cadaster risk records, zoom the map to a named cadaster, and share general Red Cross-style flood safety guidance. This project is a planning prototype, not an official emergency warning system.";
-}
-
-function redCrossFloodGuidance(): string {
-  return [
-    "General flood safety guidance, based on American Red Cross recommendations:",
-    "",
-    "Before a flood: know your local flood risk, prepare an emergency kit, keep important documents protected, and follow alerts or evacuation instructions from authorities.",
-    "During a flood: move to higher ground if instructed, avoid walking or driving through floodwater, and stay away from downed power lines or fast-moving water.",
-    "After a flood: return only when officials say it is safe, avoid contaminated floodwater, wear protective clothing during cleanup, and check for structural, electrical, or gas hazards before entering damaged buildings.",
-    "",
-    "For immediate danger, follow local emergency services and official evacuation orders."
-  ].join("\n");
-}
-
-function rephrasedRecordAnswer(record: Prediction): string {
-  return [
-    `For ${record.region_name}, the current project data shows ${record.risk_label} flood risk with a risk score of ${Math.round(record.risk_score * 100)}%.`,
-    `The 7-day rainfall total is ${record.rainfall_7d} mm. Main drivers: ${record.main_drivers}.`,
-    `Suggested planning action: ${record.recommended_action}`,
-    "",
-    "I focused the map and charts on this cadaster. Use this for planning support only, not official emergency instructions."
-  ].join("\n");
-}
-
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -63,53 +24,33 @@ function findMentionedCadaster(query: string, predictions: Prediction[]): Predic
     if (byCode) return byCode;
   }
 
-  return [...predictions]
-    .sort((a, b) => b.region_name.length - a.region_name.length)
-    .find((record) => {
-      const normalizedName = normalizeText(record.region_name);
-      return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
-    }) ?? null;
+  return (
+    [...predictions]
+      .sort((a, b) => b.region_name.length - a.region_name.length)
+      .find((record) => {
+        const normalizedName = normalizeText(record.region_name);
+        return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
+      }) ?? null
+  );
 }
 
-function scoreRecord(query: string, record: Prediction): number {
-  const terms = query.toLowerCase().split(/\W+/).filter(Boolean);
-  const text = `${record.region_name} ${record.risk_label} ${record.main_drivers} ${record.recommended_action}`.toLowerCase();
-  return terms.reduce((score, term) => score + (text.includes(term) ? 1 : 0), 0);
-}
-
-function answerFromRecords(query: string, predictions: Prediction[]): string {
-  if (isGreeting(query)) {
-    return introAnswer();
-  }
-  if (isGeneralFloodGuidance(query)) {
-    return redCrossFloodGuidance();
-  }
-
-  const mentioned = findMentionedCadaster(query, predictions);
+function fallbackAnswer(question: string, predictions: Prediction[]): string {
+  const mentioned = findMentionedCadaster(question, predictions);
   if (mentioned) {
-    return rephrasedRecordAnswer(mentioned);
+    return [
+      `I found ${mentioned.region_name} in the local dashboard data.`,
+      `Current risk: ${mentioned.risk_label}, score ${Math.round(mentioned.risk_score * 100)}%.`,
+      `7-day rainfall: ${mentioned.rainfall_7d} mm. Drivers: ${mentioned.main_drivers}.`,
+      `Recommended action: ${mentioned.recommended_action}`,
+      "",
+      "The backend chatbot is unavailable, so this is a local fallback answer."
+    ].join("\n");
   }
 
-  const matches = [...predictions]
-    .map((record) => ({ record, score: scoreRecord(query, record) }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || b.record.risk_score - a.record.risk_score)
-    .slice(0, 3)
-    .map((item) => item.record);
-
-  if (matches.length === 0) {
-    return "The requested information is unavailable in the current flood-risk records.";
-  }
-
-  const highRiskCount = predictions.filter((item) => item.risk_label === "High").length;
-  const contextLines = matches
-    .map(
-      (item) =>
-        `${item.region_name}: ${item.risk_label} risk, ${item.rainfall_7d} mm 7-day rainfall, drivers: ${item.main_drivers}. Action: ${item.recommended_action}`
-    )
-    .join("\n");
-
-  return `Here is the relevant flood-risk information from the project records:\n${contextLines}\n\nCurrent dataset summary: ${highRiskCount} of ${predictions.length} regions are High risk. Use this for planning support only, not official emergency instructions.`;
+  return [
+    "I could not reach the Ollama-backed chatbot service.",
+    "When the backend is running, I can chat normally and extract flood-risk records when you ask for dashboard data."
+  ].join("\n");
 }
 
 export default function Chatbot({ predictions, onSelectRegion }: { predictions: Prediction[]; onSelectRegion: (regionId: string) => void }) {
@@ -117,7 +58,7 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
     () => [
       {
         role: "assistant",
-        content: "Ask about high-risk areas, rainfall drivers, or recommended planning actions. I will answer only from the current prediction records."
+        content: "Hi, I am the Flood Risk AI chatbot. You can chat with me normally, or ask me for cadaster flood-risk data."
       }
     ],
     []
@@ -129,32 +70,34 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
   async function submit() {
     const question = input.trim();
     if (!question || isSending) return;
-    setIsSending(true);
-    setMessages((current) => [...current, { role: "user", content: question }]);
-    setInput("");
+
+    const userMessage: Message = { role: "user", content: question };
+    const nextMessages = [...messages, userMessage];
     const mentionedCadaster = findMentionedCadaster(question, predictions);
     if (mentionedCadaster) {
       onSelectRegion(mentionedCadaster.region_id);
     }
 
-    if (isGreeting(question) || isGeneralFloodGuidance(question)) {
-      setMessages((current) => [...current, { role: "assistant", content: answerFromRecords(question, predictions) }]);
-      setIsSending(false);
-      return;
-    }
+    setIsSending(true);
+    setMessages(nextMessages);
+    setInput("");
 
     const backendUrl = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:8000";
     try {
       const response = await fetch(`${backendUrl}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({
+          question,
+          history: messages.slice(-8)
+        })
       });
       if (!response.ok) throw new Error("Backend chat request failed");
+
       const payload = (await response.json()) as { answer?: string };
-      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? answerFromRecords(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? fallbackAnswer(question, predictions) }]);
     } catch {
-      setMessages((current) => [...current, { role: "assistant", content: answerFromRecords(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: fallbackAnswer(question, predictions) }]);
     } finally {
       setIsSending(false);
     }
@@ -180,10 +123,10 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
           onKeyDown={(event) => {
             if (event.key === "Enter") submit();
           }}
-          placeholder={isSending ? "Retrieving context..." : "Which regions are high risk?"}
+          placeholder={isSending ? "Thinking..." : "Say hello, or ask about a cadaster risk"}
           className="min-w-0 flex-1 rounded-md border border-slate-200 px-3 py-2 text-sm outline-none focus:border-river"
         />
-        <button disabled={isSending} onClick={submit} className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-river text-white hover:bg-[#185d70] disabled:cursor-wait disabled:opacity-60" title="Send question">
+        <button disabled={isSending} onClick={submit} className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-river text-white hover:bg-[#185d70] disabled:cursor-wait disabled:opacity-60" title="Send message">
           <Send className="h-4 w-4" />
         </button>
       </div>
