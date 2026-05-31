@@ -2,5 +2,10 @@
   "framework": "vite",
   "installCommand": "cd frontend && npm ci",
   "buildCommand": "cd frontend && VITE_BASE_PATH=/ npm run build",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 60
+    }
+  }
 }

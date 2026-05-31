@@ -82,9 +82,10 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
     setMessages(nextMessages);
     setInput("");
 
-    const backendUrl = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:8000";
+    const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+    const chatEndpoint = backendUrl ? `${backendUrl.replace(/\/$/, "")}/chat` : "/api/chat";
     try {
-      const response = await fetch(`${backendUrl}/chat`, {
+      const response = await fetch(chatEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
