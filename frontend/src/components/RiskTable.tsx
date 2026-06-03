@@ -3,6 +3,8 @@ import { Search } from "lucide-react";
 import cadasters from "../data/cadasters.json";
 import type { Prediction, RiskLabel } from "../types";
 
+const pageSize = 50;
+
 const badgeClass: Record<RiskLabel, string> = {
   Low: "bg-green-50 text-green-800 ring-green-200",
   Medium: "bg-amber-50 text-amber-900 ring-amber-200",
@@ -32,6 +34,7 @@ type TableRow = CalculatedRow | UncalculatedRow;
 
 export default function RiskTable({ predictions }: { predictions: Prediction[] }) {
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const rows = useMemo<TableRow[]>(() => {
     const normalized = query.trim().toLowerCase();
     const calculated = predictions
@@ -63,6 +66,12 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
 
     return [...calculated, ...uncalculated];
   }, [predictions, query]);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const start = (currentPage - 1) * pageSize;
+  const pageRows = rows.slice(start, start + pageSize);
+  const showingStart = rows.length === 0 ? 0 : start + 1;
+  const showingEnd = Math.min(start + pageSize, rows.length);
 
   return (
     <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
@@ -70,7 +79,10 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
         <Search className="h-4 w-4 text-bluewave" />
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
           placeholder="Search calculated or uncalculated cadasters"
           className="w-full rounded-md border border-bluewave/50 px-3 py-2 text-sm outline-none focus:border-river"
         />
@@ -89,7 +101,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
             </tr>
           </thead>
           <tbody className="divide-y divide-bluewave/20 bg-white/75">
-            {rows.map((item) => (
+            {pageRows.map((item) => (
               <tr key={item.region_id} className="align-top">
                 <td className="px-4 py-3 font-medium">{item.region_name}</td>
                 <td className="px-4 py-3">
@@ -112,6 +124,32 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-bluewave/40 px-4 py-3 text-sm text-ink/75">
+        <span>
+          Showing {showingStart}-{showingEnd} of {rows.length}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="rounded-md border border-bluewave/50 bg-panel px-3 py-1.5 font-medium transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={currentPage === 1}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            Previous
+          </button>
+          <span className="font-medium text-ink">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className="rounded-md border border-bluewave/50 bg-panel px-3 py-1.5 font-medium transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={currentPage === totalPages}
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

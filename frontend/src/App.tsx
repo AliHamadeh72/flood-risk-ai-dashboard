@@ -5,7 +5,7 @@ import rainySeasonHistory from "./data/rainy_season_history.json";
 import Chatbot from "./components/Chatbot";
 import MapView from "./components/MapView";
 import ModelInfo from "./components/ModelInfo";
-import RiskCharts from "./components/RiskCharts";
+import RiskCharts, { RainySeasonRiskChart } from "./components/RiskCharts";
 import RiskTable from "./components/RiskTable";
 import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
@@ -18,7 +18,8 @@ function App() {
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const highRisk = data.filter((item) => item.risk_label === "High");
-  const highest = [...data].sort((a, b) => b.risk_score - a.risk_score)[0];
+  const positiveRisk = data.filter((item) => item.risk_score > 0);
+  const highest = [...positiveRisk].sort((a, b) => b.risk_score - a.risk_score)[0];
   const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
   const sortedDates = data.map((item) => item.date).sort();
   const latestDate = sortedDates[sortedDates.length - 1];
@@ -33,6 +34,11 @@ function App() {
       setZoomRequestId((requestId) => requestId + 1);
       return regionId;
     });
+  };
+  const focusCurrentRegion = (regionId: string) => {
+    setMapMode("current");
+    setSelectedRegionId(regionId);
+    setZoomRequestId((requestId) => requestId + 1);
   };
   const selectRainySeasonRegion = (regionId: string) => {
     setMapMode("rainy");
@@ -88,9 +94,9 @@ function App() {
         <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
         <Kpi
           title="Highest-risk region"
-          value={highest.region_name}
-          detail={`${Math.round(highest.risk_score * 100)}% model confidence`}
-          onClick={() => selectRegion(highest.region_id)}
+          value={highest ? highest.region_name : "None"}
+          detail={highest ? `${Math.round(highest.risk_score * 100)}% model confidence` : "No cadaster has current flood risk"}
+          onClick={highest ? () => selectRegion(highest.region_id) : undefined}
         />
         <Kpi title="Avg 7-day rainfall" value={`${avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
@@ -118,7 +124,7 @@ function App() {
             onSelectRegion={selectRegion}
           />
         </div>
-        <div>
+        <div className="xl:max-h-[520px] xl:overflow-y-auto xl:pr-1">
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
           <RiskCharts
             predictions={data}
@@ -126,21 +132,34 @@ function App() {
             onSelectRegion={selectRegion}
             onSelectRainySeasonRegion={selectRainySeasonRegion}
             onClearSelection={clearSelection}
+            includeRainySeason={false}
           />
         </div>
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div id="chatbot">
+          <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
+          <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
+        </div>
+        <div>
+          <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Rainy Season" />
+          <RainySeasonRiskChart
+            predictions={data}
+            selectedRegionId={selectedRegionId}
+            onSelectRainySeasonRegion={selectRainySeasonRegion}
+            onClearSelection={clearSelection}
+          />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+        <ModelInfo />
       </section>
 
       <section id="table" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
         <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
         <RiskTable predictions={data} />
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-        <div id="chatbot">
-          <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
-          <Chatbot predictions={data} />
-        </div>
-        <ModelInfo />
       </section>
       </main>
     </>

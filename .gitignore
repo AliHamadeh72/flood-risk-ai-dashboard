@@ -9,3 +9,4 @@ frontend/tsconfig.tsbuildinfo
 data/raw/open_meteo_cache/
 ml/model/*.joblib
 rag/vector_store/*.joblib
+.vercel

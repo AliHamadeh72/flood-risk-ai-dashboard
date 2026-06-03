@@ -7,41 +7,58 @@ type Message = {
   content: string;
 };
 
-function scoreRecord(query: string, record: Prediction): number {
-  const terms = query.toLowerCase().split(/\W+/).filter(Boolean);
-  const text = `${record.region_name} ${record.risk_label} ${record.main_drivers} ${record.recommended_action}`.toLowerCase();
-  return terms.reduce((score, term) => score + (text.includes(term) ? 1 : 0), 0);
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
-function answerFromRecords(query: string, predictions: Prediction[]): string {
-  const matches = [...predictions]
-    .map((record) => ({ record, score: scoreRecord(query, record) }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || b.record.risk_score - a.record.risk_score)
-    .slice(0, 3)
-    .map((item) => item.record);
-
-  if (matches.length === 0) {
-    return "The requested information is unavailable in the current flood-risk records.";
+function findMentionedCadaster(query: string, predictions: Prediction[]): Prediction | null {
+  const normalizedQuery = ` ${normalizeText(query)} `;
+  const codeMatch = query.match(/\b\d{3,}\b/);
+  if (codeMatch) {
+    const byCode = predictions.find((record) => record.region_id === codeMatch[0]);
+    if (byCode) return byCode;
   }
 
-  const highRiskCount = predictions.filter((item) => item.risk_label === "High").length;
-  const contextLines = matches
-    .map(
-      (item) =>
-        `${item.region_name}: ${item.risk_label} risk, ${item.rainfall_7d} mm 7-day rainfall, drivers: ${item.main_drivers}. Action: ${item.recommended_action}`
-    )
-    .join("\n");
-
-  return `Based only on retrieved project records:\n${contextLines}\n\nCurrent dataset summary: ${highRiskCount} of ${predictions.length} regions are High risk. Use this for planning support only, not official emergency instructions.`;
+  return (
+    [...predictions]
+      .sort((a, b) => b.region_name.length - a.region_name.length)
+      .find((record) => {
+        const normalizedName = normalizeText(record.region_name);
+        return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
+      }) ?? null
+  );
 }
 
-export default function Chatbot({ predictions }: { predictions: Prediction[] }) {
+function fallbackAnswer(question: string, predictions: Prediction[]): string {
+  const mentioned = findMentionedCadaster(question, predictions);
+  if (mentioned) {
+    return [
+      `I found ${mentioned.region_name} in the local dashboard data.`,
+      `Current risk: ${mentioned.risk_label}, score ${Math.round(mentioned.risk_score * 100)}%.`,
+      `7-day rainfall: ${mentioned.rainfall_7d} mm. Drivers: ${mentioned.main_drivers}.`,
+      `Recommended action: ${mentioned.recommended_action}`,
+      "",
+      "The backend chatbot is unavailable, so this is a local fallback answer."
+    ].join("\n");
+  }
+
+  return [
+    "I could not reach the Ollama-backed chatbot service.",
+    "When the backend is running, I can chat normally and extract flood-risk records when you ask for dashboard data."
+  ].join("\n");
+}
+
+export default function Chatbot({ predictions, onSelectRegion }: { predictions: Prediction[]; onSelectRegion: (regionId: string) => void }) {
   const starter = useMemo<Message[]>(
     () => [
       {
         role: "assistant",
-        content: "Ask about high-risk areas, rainfall drivers, or recommended planning actions. I will answer only from the current prediction records."
+        content: "Hi, I am the Flood Risk AI chatbot. You can chat with me normally, or ask me for cadaster flood-risk data."
       }
     ],
     []
@@ -53,22 +70,35 @@ export default function Chatbot({ predictions }: { predictions: Prediction[] }) 
   async function submit() {
     const question = input.trim();
     if (!question || isSending) return;
+
+    const userMessage: Message = { role: "user", content: question };
+    const nextMessages = [...messages, userMessage];
+    const mentionedCadaster = findMentionedCadaster(question, predictions);
+    if (mentionedCadaster) {
+      onSelectRegion(mentionedCadaster.region_id);
+    }
+
     setIsSending(true);
-    setMessages((current) => [...current, { role: "user", content: question }]);
+    setMessages(nextMessages);
     setInput("");
 
-    const backendUrl = import.meta.env.VITE_BACKEND_API_URL ?? "http://localhost:8000";
+    const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+    const chatEndpoint = backendUrl ? `${backendUrl.replace(/\/$/, "")}/chat` : "/api/chat";
     try {
-      const response = await fetch(`${backendUrl}/chat`, {
+      const response = await fetch(chatEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({
+          question,
+          history: messages.slice(-8)
+        })
       });
       if (!response.ok) throw new Error("Backend chat request failed");
+
       const payload = (await response.json()) as { answer?: string };
-      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? answerFromRecords(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? fallbackAnswer(question, predictions) }]);
     } catch {
-      setMessages((current) => [...current, { role: "assistant", content: answerFromRecords(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: fallbackAnswer(question, predictions) }]);
     } finally {
       setIsSending(false);
     }
