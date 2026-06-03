@@ -51,9 +51,11 @@ body {
   z-index: -1;
   width: 100vw;
   height: 100vh;
+  contain: strict;
   overflow: hidden;
   pointer-events: none;
   background: transparent;
+  transform: translateZ(0);
 }
 
 .animated-background span {
@@ -64,6 +66,8 @@ body {
   backface-visibility: hidden;
   opacity: 0.42;
   animation: background-orbit linear infinite;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .watercolor-backdrop > :not(.animated-background) {
@@ -434,6 +438,49 @@ body {
 @keyframes background-orbit {
   100% {
     transform: translate3d(0, 0, 1px) rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    scroll-padding-top: 104px;
+  }
+
+  .page-section {
+    scroll-margin-top: 104px;
+  }
+
+  .app-header {
+    backdrop-filter: none;
+  }
+
+  .animated-background span {
+    width: 28vmin;
+    height: 28vmin;
+    opacity: 0.24;
+    animation-duration: 30s !important;
+    box-shadow: 52vmin 0 8vmin currentColor !important;
+  }
+
+  .animated-background span:nth-child(2n) {
+    animation-duration: 36s !important;
+  }
+
+  .animated-background span:nth-child(3n) {
+    animation-duration: 42s !important;
+  }
+
+  .animated-background span:nth-child(n + 11) {
+    display: none;
+  }
+
+  .startup-bar-chart .recharts-bar-rectangle,
+  .startup-bar-chart .recharts-bar-rectangle path,
+  .startup-bar-chart .recharts-bar-rectangle rect,
+  .selected-rainy-bar,
+  .selected-rainy-bar path,
+  .selected-rainy-bar rect {
+    animation-duration: 1.1s;
   }
 }
 

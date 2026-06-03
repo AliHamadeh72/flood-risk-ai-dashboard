@@ -63,7 +63,7 @@ function App() {
       )}
       <main className={`watercolor-backdrop min-h-dvh text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
       <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
-      <header className="sticky top-0 z-30 border-b border-bluewave/40 bg-[#DBEAFE]/95 shadow-sm backdrop-blur-sm">
+      <header className="app-header sticky top-0 z-30 border-b border-bluewave/40 bg-[#DBEAFE]/95 shadow-sm backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:gap-5 sm:px-6 sm:py-5 lg:px-8">
           <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div className="min-w-0">
