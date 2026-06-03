@@ -260,10 +260,11 @@ def _ollama_chat(messages: list[ChatMessage], *, timeout: int = 45) -> str | Non
     if requests is None:
         return None
 
-    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
-    model = os.getenv("OLLAMA_MODEL", "llama3.1")
     api_key = os.getenv("OLLAMA_API_KEY")
     allow_without_key = os.getenv("USE_OLLAMA_WITHOUT_KEY", "").lower() in {"1", "true", "yes"}
+    base_url = os.getenv("OLLAMA_BASE_URL") or ("https://ollama.com" if api_key else "http://localhost:11434")
+    base_url = base_url.rstrip("/")
+    model = os.getenv("OLLAMA_MODEL") or ("gpt-oss:120b" if api_key else "llama3.1")
     if not api_key and not allow_without_key:
         return None
 

@@ -161,10 +161,10 @@ function dataContext(question) {
 }
 
 async function ollamaChat(messages) {
-  const baseUrl = (process.env.OLLAMA_BASE_URL || "").replace(/\/$/, "");
-  const model = process.env.OLLAMA_MODEL || "llama3.1";
   const apiKey = process.env.OLLAMA_API_KEY;
   const allowWithoutKey = ["1", "true", "yes"].includes(String(process.env.USE_OLLAMA_WITHOUT_KEY || "").toLowerCase());
+  const baseUrl = (process.env.OLLAMA_BASE_URL || (apiKey ? "https://ollama.com" : "")).replace(/\/$/, "");
+  const model = process.env.OLLAMA_MODEL || (apiKey ? "gpt-oss:120b" : "llama3.1");
 
   if (!baseUrl || (!apiKey && !allowWithoutKey)) return null;
 

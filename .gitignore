@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.log
 .env
+.env.*
+!.env.example
 node_modules/
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
