@@ -87,7 +87,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
           className="w-full rounded-md border border-bluewave/50 px-3 py-2 text-sm outline-none focus:border-river"
         />
       </div>
-      <div className="overflow-x-auto">
+      <div className="mobile-scroll overflow-x-auto">
         <table className="min-w-full divide-y divide-bluewave/30 text-sm">
           <thead className="bg-panel text-left text-xs uppercase tracking-normal text-ink">
             <tr>
@@ -125,11 +125,11 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-bluewave/40 px-4 py-3 text-sm text-ink/75">
+      <div className="flex flex-col gap-3 border-t border-bluewave/40 px-4 py-3 text-sm text-ink/75 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span>
           Showing {showingStart}-{showingEnd} of {rows.length}
         </span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 sm:justify-start">
           <button
             type="button"
             className="rounded-md border border-bluewave/50 bg-panel px-3 py-1.5 font-medium transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"

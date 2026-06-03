@@ -61,29 +61,29 @@ function App() {
           </div>
         </div>
       )}
-      <main className={`watercolor-backdrop min-h-screen text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
+      <main className={`watercolor-backdrop min-h-dvh text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
       <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
-      <header className="border-b border-bluewave/40 bg-[#DBEAFE] shadow-sm">
-        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">Flood Risk AI Dashboard</h1>
-              <p className="mt-1 max-w-3xl text-sm text-ink/75">
+      <header className="sticky top-0 z-30 border-b border-bluewave/40 bg-[#DBEAFE]/95 shadow-sm backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:gap-5 sm:px-6 sm:py-5 lg:px-8">
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold leading-tight tracking-normal sm:text-3xl">Flood Risk AI Dashboard</h1>
+              <p className="mt-1 max-w-3xl text-xs leading-5 text-ink/75 sm:text-sm">
                 Cadaster-level flood-risk view powered by Open-Meteo weather data and grounded local retrieval.
               </p>
             </div>
-            <div className="rounded-md border border-bluewave/50 bg-panel px-3 py-2 text-sm text-ink">
+            <div className="w-fit rounded-md border border-bluewave/50 bg-panel px-3 py-2 text-xs text-ink sm:text-sm">
               Latest update: <span className="font-semibold text-ink">{latestDate}</span>
             </div>
           </div>
-          <nav className="flex flex-wrap gap-2 text-sm">
+          <nav className="mobile-nav -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
             {[
               ["dashboard", "Dashboard", Activity],
               ["map", "Map", Map],
               ["table", "Table", Table2],
               ["chatbot", "Chatbot", MessageSquare]
             ].map(([href, label, Icon]) => (
-              <a key={href as string} href={`#${href}`} className="inline-flex items-center gap-2 rounded-md border border-bluewave/50 bg-panel px-3 py-2 font-medium text-ink hover:bg-river hover:text-white">
+              <a key={href as string} href={`#${href}`} className="inline-flex flex-none items-center gap-2 rounded-md border border-bluewave/50 bg-panel px-3 py-2 font-medium text-ink transition hover:bg-river hover:text-white">
                 <Icon className="h-4 w-4" />
                 {label as string}
               </a>
@@ -92,7 +92,7 @@ function App() {
         </div>
       </header>
 
-      <section id="dashboard" className="mx-auto grid max-w-7xl gap-4 px-4 py-6 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-8">
+      <section id="dashboard" className="page-section mx-auto grid max-w-7xl gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6 sm:py-6 lg:grid-cols-4 lg:px-8">
         <Kpi title="High-risk areas" value={highRisk.length.toString()} detail="Regions requiring planning attention" />
         <Kpi
           title="Highest-risk region"
@@ -104,13 +104,13 @@ function App() {
         <Kpi title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
-        <div id="map" className="min-h-[440px]">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-7 sm:gap-6 sm:px-6 sm:pb-8 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
+        <div id="map" className="page-section min-h-[360px] sm:min-h-[440px]">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-bluewave/50 bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-river hover:bg-river hover:text-white"
+              className="inline-flex w-fit items-center gap-2 rounded-md border border-bluewave/50 bg-white px-3 py-2 text-sm font-medium text-ink shadow-sm transition hover:border-river hover:bg-river hover:text-white"
               onClick={toggleMapMode}
             >
               <ArrowLeftRight className="h-4 w-4" />
@@ -139,8 +139,8 @@ function App() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-8 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-        <div id="chatbot">
+      <section className="mx-auto grid max-w-7xl gap-5 px-4 pb-7 sm:gap-6 sm:px-6 sm:pb-8 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div id="chatbot" className="page-section">
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
           <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
         </div>
@@ -155,11 +155,11 @@ function App() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-7 sm:px-6 sm:pb-8 lg:px-8">
         <ModelInfo />
       </section>
 
-      <section id="table" className="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+      <section id="table" className="page-section mx-auto max-w-7xl px-4 pb-7 sm:px-6 sm:pb-8 lg:px-8">
         <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
         <RiskTable predictions={data} />
       </section>

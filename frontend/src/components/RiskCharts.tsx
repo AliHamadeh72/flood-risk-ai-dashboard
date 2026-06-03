@@ -79,11 +79,11 @@ export default function RiskCharts({
   return (
     <div className="grid gap-4">
       <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-3 flex items-start justify-between gap-3 sm:items-center">
           <h3 className="text-sm font-semibold text-ink">Top current-risk cadasters</h3>
           {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
         </div>
-        <div className="startup-bar-chart h-52">
+        <div className="startup-bar-chart h-56 sm:h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={currentRiskChartData} onClick={(state) => selectFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -108,7 +108,7 @@ export default function RiskCharts({
 
       <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-ink">River discharge vs risk score</h3>
-        <div className="h-56">
+        <div className="h-60 sm:h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart onClick={(state) => selectFromChartState(state as ChartClickState)}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -173,12 +173,12 @@ export function RainySeasonRiskChart({
 
   return (
     <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex items-start justify-between gap-3 sm:items-center">
         <h3 className="text-sm font-semibold text-ink">Average rainy-season flood risk</h3>
         {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
       </div>
       <p className="mb-3 text-xs text-ink/65">Top five cadasters by average rainy-season risk, plus the selected map cadaster when different.</p>
-      <div className={`${rainyStartupAnimation ? "startup-bar-chart" : ""} h-60`}>
+      <div className={`${rainyStartupAnimation ? "startup-bar-chart" : ""} h-64 sm:h-60`}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rainySeasonChartData} onClick={(state) => selectRainySeasonFromChartState(state as ChartClickState)}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />

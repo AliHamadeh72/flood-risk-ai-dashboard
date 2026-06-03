@@ -105,8 +105,8 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
   }
 
   return (
-    <div className="flex min-h-[430px] flex-col rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
-      <div className="flex-1 space-y-3 overflow-y-auto p-4">
+    <div className="flex min-h-[360px] flex-col rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm sm:min-h-[430px]">
+      <div className="mobile-scroll flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
             {message.role === "assistant" && <Bot className="mt-1 h-5 w-5 flex-none text-river" />}

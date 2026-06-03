@@ -44,7 +44,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
 
   return (
     <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
-      <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[440px] w-full">
+      <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[360px] w-full sm:h-[440px]">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} />
         <GeoJSON
@@ -87,7 +87,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           }}
         />
       </MapContainer>
-      <div className="flex flex-wrap gap-3 border-t border-bluewave/40 px-4 py-3 text-sm">
+      <div className="flex flex-wrap gap-2 border-t border-bluewave/40 px-3 py-3 text-xs sm:gap-3 sm:px-4 sm:text-sm">
         {Object.entries(colors).map(([label, color]) => (
           <span key={label} className="inline-flex items-center gap-2">
             <span className="h-3 w-3 rounded-sm" style={{ background: color }} />
