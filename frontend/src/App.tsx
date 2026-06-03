@@ -11,6 +11,7 @@ import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
 const data = predictions as Prediction[];
 const rainyData = rainySeasonHistory as RainySeasonRecord[];
+const backgroundSpans = Array.from({ length: 25 }, (_, index) => <span key={index} />);
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +62,8 @@ function App() {
         </div>
       )}
       <main className={`watercolor-backdrop min-h-screen text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
-      <header className="border-b border-white/50 bg-[#F8FCFF]/45 shadow-sm backdrop-blur-md">
+      <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
+      <header className="border-b border-bluewave/40 bg-[#DBEAFE] shadow-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>

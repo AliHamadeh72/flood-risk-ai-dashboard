@@ -100,7 +100,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
               <th className="px-4 py-3">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-bluewave/20 bg-white/75">
+          <tbody className="divide-y divide-bluewave/20 bg-white">
             {pageRows.map((item) => (
               <tr key={item.region_id} className="align-top">
                 <td className="px-4 py-3 font-medium">{item.region_name}</td>

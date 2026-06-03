@@ -31,7 +31,7 @@ export default function ModelInfo() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-white/75 p-3 ring-1 ring-bluewave/30">
+    <div className="rounded-md bg-white p-3 ring-1 ring-bluewave/30">
       <dt className="text-xs font-semibold uppercase tracking-normal text-ink/65">{label}</dt>
       <dd className="mt-1 font-medium text-ink">{value}</dd>
     </div>
