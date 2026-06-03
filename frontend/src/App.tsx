@@ -60,8 +60,8 @@ function App() {
           </div>
         </div>
       )}
-      <main className={`min-h-screen bg-[#60A5FA] text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
-      <header className="border-b border-bluewave/40 bg-white">
+      <main className={`watercolor-backdrop min-h-screen text-ink transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}>
+      <header className="border-b border-white/50 bg-[#F8FCFF]/45 shadow-sm backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>

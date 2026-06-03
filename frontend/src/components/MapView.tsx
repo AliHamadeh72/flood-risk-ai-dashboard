@@ -6,10 +6,12 @@ import type { MapMode, Prediction, RainySeasonRecord, RiskLabel } from "../types
 import { summarizeRainySeason } from "../utils/rainySeason";
 
 const colors: Record<RiskLabel, string> = {
-  Low: "#287b53",
-  Medium: "#d98c20",
-  High: "#c94132"
+  Low: "#5DA9FF",
+  Medium: "#1E5EFF",
+  High: "#001F5B"
 };
+
+const uncalculatedColor = "#B3D9FF";
 
 type RegionProps = {
   region_id?: string;
@@ -55,7 +57,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
             const rainySummary = rainyByRegion.get(featureId);
             const isSelected = selectedRegionId === featureId;
             const layerRisk = mapMode === "rainy" ? rainySummary?.risk_label : prediction?.risk_label;
-            const color = layerRisk ? colors[layerRisk] : "#DBEAFE";
+            const color = layerRisk ? colors[layerRisk] : uncalculatedColor;
             const fillOpacity = layerRisk === "Low" ? 0.1 : layerRisk ? 0.28 : 0.16;
             const selectedFillOpacity = layerRisk === "Low" ? 0.22 : 0.42;
             return {
@@ -93,7 +95,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           </span>
         ))}
         <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm bg-panel ring-1 ring-bluewave" />
+          <span className="h-3 w-3 rounded-sm ring-1 ring-bluewave" style={{ background: uncalculatedColor }} />
           Uncalculated
         </span>
         {selectedName && <span className="font-medium text-river">Selected: {selectedName}</span>}

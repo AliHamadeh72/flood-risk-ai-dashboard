@@ -17,9 +17,9 @@ import type { Prediction, RainySeasonRecord, RiskLabel } from "../types";
 import { summarizeRainySeason } from "../utils/rainySeason";
 
 const colors: Record<RiskLabel, string> = {
-  Low: "#287b53",
-  Medium: "#d98c20",
-  High: "#c94132"
+  Low: "#5DA9FF",
+  Medium: "#1E5EFF",
+  High: "#001F5B"
 };
 
 type RiskChartsProps = {
