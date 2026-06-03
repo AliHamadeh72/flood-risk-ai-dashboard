@@ -17,7 +17,7 @@ This project is a decision-support prototype. It is not an official emergency wa
 - RAG document generation and local retrieval utilities
 - React dashboard with map, charts, table, and chatbot
 - Optional FastAPI backend scaffold
-- GitHub Pages deployment workflow
+- Vercel deployment configuration
 
 ## Project Structure
 
@@ -170,10 +170,10 @@ The generated fixture includes one Low, one Medium, and one High cadaster so the
 The map renders the full cadaster layer from `frontend/src/data/cadasters.json`.
 
 - Cadasters with Open-Meteo predictions use the project risk colors:
-  - Low = green
-  - Medium = orange
-  - High = red
-- Cadasters without calculated weather/risk output render grey.
+  - Low = light blue
+  - Medium = royal blue
+  - High = deep navy
+- Cadasters without calculated weather/risk output render pale blue.
 
 ## RAG Chatbot
 
@@ -213,13 +213,9 @@ Endpoints:
 4. Add your production domain in Vercel Project Settings > Domains, then point your DNS records to Vercel as instructed.
 5. Pushes to `main`, including weekly data-refresh commits, trigger a new production deployment when Vercel Git integration is enabled.
 
-### GitHub Pages
-
-The older GitHub Pages workflow remains available in `.github/workflows/deploy-frontend.yml`. It uses the default Vite base path `/flood-risk-ai-dashboard/`.
-
 ## Limitations
 
-- GitHub Pages cannot run Python, FastAPI, model inference, or secret-backed AI calls.
+- Static frontend hosting cannot run Python, FastAPI, model inference, or secret-backed AI calls.
 - Static deployment uses precomputed JSON outputs.
 - The current forecast layer is generated for every cadaster code in the checked-in GeoJSON by spatially joining one Open-Meteo weather/flood sample across cadaster polygons.
 - Full-country cadaster refreshes should be run locally or on a backend/scheduled worker because they require many API calls.
