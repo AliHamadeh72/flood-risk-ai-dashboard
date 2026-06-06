@@ -32,40 +32,46 @@ type UncalculatedRow = {
 
 type TableRow = CalculatedRow | UncalculatedRow;
 
+const cadasterSearchRows = (cadasters as { features: Array<{ properties?: CadasterProperties }> }).features
+  .map((feature) => feature.properties)
+  .filter((properties): properties is CadasterProperties => Boolean(properties))
+  .map((properties) => {
+    const regionId = String(properties.region_id ?? properties.ACS_Code ?? "");
+    const regionName = String(properties.region_name ?? properties.Muni ?? properties.ACS_Code ?? "Unnamed cadaster");
+    const district = properties.District;
+    const governorate = properties.GOV;
+    return {
+      row: {
+        rowType: "uncalculated" as const,
+        region_id: regionId,
+        region_name: regionName,
+        district,
+        governorate
+      },
+      searchText: `${regionName} ${regionId} ${district ?? ""} ${governorate ?? ""}`.toLowerCase()
+    };
+  });
+
 export default function RiskTable({ predictions }: { predictions: Prediction[] }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const sortedPredictions = useMemo(() => [...predictions].sort((a, b) => b.risk_score - a.risk_score), [predictions]);
+  const calculatedIds = useMemo(() => new Set(predictions.map((item) => item.region_id)), [predictions]);
   const rows = useMemo<TableRow[]>(() => {
     const normalized = query.trim().toLowerCase();
-    const calculated = predictions
+    const calculated = sortedPredictions
       .filter((item) => !normalized || `${item.region_name} ${item.risk_label} ${item.main_drivers}`.toLowerCase().includes(normalized))
-      .sort((a, b) => b.risk_score - a.risk_score)
       .map((item) => ({ ...item, rowType: "calculated" as const }));
 
     if (!normalized) return calculated;
 
-    const calculatedIds = new Set(predictions.map((item) => item.region_id));
-    const uncalculated = (cadasters as { features: Array<{ properties?: CadasterProperties }> }).features
-      .map((feature) => feature.properties)
-      .filter((properties): properties is CadasterProperties => Boolean(properties))
-      .map((properties) => {
-        const regionId = String(properties.region_id ?? properties.ACS_Code ?? "");
-        return {
-          rowType: "uncalculated" as const,
-          region_id: regionId,
-          region_name: String(properties.region_name ?? properties.Muni ?? properties.ACS_Code ?? "Unnamed cadaster"),
-          district: properties.District,
-          governorate: properties.GOV
-        };
-      })
-      .filter((item) => {
-        if (!item.region_id || calculatedIds.has(item.region_id)) return false;
-        return `${item.region_name} ${item.region_id} ${item.district ?? ""} ${item.governorate ?? ""}`.toLowerCase().includes(normalized);
-      })
+    const uncalculated = cadasterSearchRows
+      .filter((item) => item.row.region_id && !calculatedIds.has(item.row.region_id) && item.searchText.includes(normalized))
+      .map((item) => item.row)
       .slice(0, 50);
 
     return [...calculated, ...uncalculated];
-  }, [predictions, query]);
+  }, [calculatedIds, query, sortedPredictions]);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
@@ -74,8 +80,8 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
   const showingEnd = Math.min(start + pageSize, rows.length);
 
   return (
-    <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
-      <div className="flex items-center gap-2 border-b border-bluewave/40 p-3">
+    <div className="overflow-hidden rounded-[18px] border border-white/60 bg-white/90 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md">
+      <div className="flex items-center gap-2 border-b border-white/70 bg-panel/80 p-3">
         <Search className="h-4 w-4 text-bluewave" />
         <input
           value={query}
@@ -84,12 +90,12 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
             setPage(1);
           }}
           placeholder="Search calculated or uncalculated cadasters"
-          className="w-full rounded-md border border-bluewave/50 px-3 py-2 text-sm outline-none focus:border-river"
+          className="w-full rounded-full border border-bluewave/50 bg-white px-4 py-2 text-sm outline-none focus:border-river focus:ring-4 focus:ring-river/20"
         />
       </div>
       <div className="mobile-scroll overflow-x-auto">
-        <table className="min-w-full divide-y divide-bluewave/30 text-sm">
-          <thead className="bg-panel text-left text-xs uppercase tracking-normal text-ink">
+        <table className="min-w-full divide-y divide-bluewave/20 text-sm">
+          <thead className="bg-panel/70 text-left font-mono text-xs text-ink/70">
             <tr>
               <th className="px-4 py-3">Region</th>
               <th className="px-4 py-3">Risk</th>
@@ -100,15 +106,15 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
               <th className="px-4 py-3">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-bluewave/20 bg-white">
+          <tbody className="divide-y divide-bluewave/10 bg-white/80">
             {pageRows.map((item) => (
-              <tr key={item.region_id} className="align-top">
+              <tr key={item.region_id} className="align-top transition hover:bg-panel/80">
                 <td className="px-4 py-3 font-medium">{item.region_name}</td>
                 <td className="px-4 py-3">
                   {item.rowType === "calculated" ? (
-                    <span className={`rounded-md px-2 py-1 text-xs font-semibold ring-1 ${badgeClass[item.risk_label]}`}>{item.risk_label}</span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${badgeClass[item.risk_label]}`}>{item.risk_label}</span>
                   ) : (
-                    <span className="rounded-md bg-panel px-2 py-1 text-xs font-semibold text-ink ring-1 ring-bluewave/60">Uncalculated</span>
+                    <span className="rounded-full bg-panel px-3 py-1 text-xs font-semibold text-ink ring-1 ring-bluewave/60">Uncalculated</span>
                   )}
                 </td>
                 <td className="px-4 py-3">{item.rowType === "calculated" ? `${item.rainfall_7d} mm` : "n/a"}</td>
@@ -125,14 +131,14 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-3 border-t border-bluewave/40 px-4 py-3 text-sm text-ink/75 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-white/70 bg-panel/80 px-4 py-3 text-sm text-ink/75 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span>
           Showing {showingStart}-{showingEnd} of {rows.length}
         </span>
         <div className="flex items-center justify-between gap-2 sm:justify-start">
           <button
             type="button"
-            className="rounded-md border border-bluewave/50 bg-panel px-3 py-1.5 font-medium transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-bluewave/50 bg-white px-4 py-1.5 font-semibold transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage === 1}
             onClick={() => setPage((value) => Math.max(1, value - 1))}
           >
@@ -143,7 +149,7 @@ export default function RiskTable({ predictions }: { predictions: Prediction[] }
           </span>
           <button
             type="button"
-            className="rounded-md border border-bluewave/50 bg-panel px-3 py-1.5 font-medium transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-bluewave/50 bg-white px-4 py-1.5 font-semibold transition hover:border-river hover:bg-river hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage === totalPages}
             onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
           >

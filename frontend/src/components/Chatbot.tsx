@@ -105,19 +105,19 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
   }
 
   return (
-    <div className="flex min-h-[360px] flex-col rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm sm:min-h-[430px]">
+    <div className="flex min-h-[360px] flex-col rounded-[18px] border border-white/60 bg-white/90 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md sm:min-h-[430px]">
       <div className="mobile-scroll flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
             {message.role === "assistant" && <Bot className="mt-1 h-5 w-5 flex-none text-river" />}
-            <p className={`max-w-[82%] whitespace-pre-line rounded-md px-3 py-2 text-sm ${message.role === "user" ? "bg-river text-white" : "bg-white text-ink ring-1 ring-bluewave/30"}`}>
+            <p className={`max-w-[82%] whitespace-pre-line rounded-[18px] px-3 py-2 text-sm ${message.role === "user" ? "bg-ink text-white" : "bg-panel text-ink ring-1 ring-white/70"}`}>
               {message.content}
             </p>
             {message.role === "user" && <UserRound className="mt-1 h-5 w-5 flex-none text-bluewave" />}
           </div>
         ))}
       </div>
-      <div className="flex gap-2 border-t border-bluewave/40 p-3">
+      <div className="flex gap-2 border-t border-white/70 bg-panel/80 p-3">
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -125,9 +125,9 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
             if (event.key === "Enter") submit();
           }}
           placeholder={isSending ? "Retrieving context..." : "Which regions are high risk?"}
-          className="min-w-0 flex-1 rounded-md border border-bluewave/50 px-3 py-2 text-sm outline-none focus:border-river"
+          className="min-w-0 flex-1 rounded-full border border-bluewave/50 bg-white px-4 py-2 text-sm outline-none focus:border-river focus:ring-4 focus:ring-river/20"
         />
-        <button disabled={isSending} onClick={submit} className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-river text-white hover:bg-bluewave disabled:cursor-wait disabled:opacity-60" title="Send question">
+        <button disabled={isSending} onClick={submit} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-river text-white hover:bg-bluewave disabled:cursor-wait disabled:opacity-60" title="Send question">
           <Send className="h-4 w-4" />
         </button>
       </div>

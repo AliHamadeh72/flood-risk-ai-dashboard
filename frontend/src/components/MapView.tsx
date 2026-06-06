@@ -31,19 +31,22 @@ type MapViewProps = {
 };
 
 export default function MapView({ predictions, rainySeasonRecords, mapMode, selectedRegionId, zoomRequestId, onSelectRegion }: MapViewProps) {
-  const byRegion = new Map(predictions.map((item) => [item.region_id, item]));
-  const byCadaster = new Map(predictions.map((item) => [item.region_id, item]));
+  const byRegion = useMemo(() => new Map(predictions.map((item) => [item.region_id, item])), [predictions]);
   const rainyByRegion = useMemo(
     () => new Map(summarizeRainySeason(predictions, rainySeasonRecords).map((item) => [item.region_id, item])),
     [predictions, rainySeasonRecords]
   );
+  const selectedPrediction = useMemo(
+    () => predictions.find((item) => item.region_id === selectedRegionId),
+    [predictions, selectedRegionId]
+  );
   const selectedName =
     mapMode === "rainy"
-      ? rainyByRegion.get(selectedRegionId ?? "")?.region_name ?? predictions.find((item) => item.region_id === selectedRegionId)?.region_name
-      : predictions.find((item) => item.region_id === selectedRegionId)?.region_name;
+      ? rainyByRegion.get(selectedRegionId ?? "")?.region_name ?? selectedPrediction?.region_name
+      : selectedPrediction?.region_name;
 
   return (
-    <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
+    <div className="overflow-hidden rounded-[18px] border border-white/60 bg-white/90 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md">
       <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[360px] w-full sm:h-[440px]">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} />
@@ -53,7 +56,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           style={(feature) => {
             const properties = feature?.properties as RegionProps | undefined;
             const featureId = properties?.region_id ?? properties?.ACS_Code ?? "";
-            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
+            const prediction = byRegion.get(featureId);
             const rainySummary = rainyByRegion.get(featureId);
             const isSelected = selectedRegionId === featureId;
             const layerRisk = mapMode === "rainy" ? rainySummary?.risk_label : prediction?.risk_label;
@@ -72,7 +75,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
             const properties = feature.properties as RegionProps;
             const featureId = properties.region_id ?? properties.ACS_Code ?? "";
             const label = properties.region_name ?? properties.Cadaster ?? properties.name ?? properties.ACS_Code ?? "Uncalculated cadaster";
-            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
+            const prediction = byRegion.get(featureId);
             const rainySummary = rainyByRegion.get(featureId);
             layer.bindPopup(
               mapMode === "rainy" && rainySummary
@@ -87,15 +90,15 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           }}
         />
       </MapContainer>
-      <div className="flex flex-wrap gap-2 border-t border-bluewave/40 px-3 py-3 text-xs sm:gap-3 sm:px-4 sm:text-sm">
+      <div className="flex flex-wrap gap-2 border-t border-white/70 bg-panel/80 px-3 py-3 text-xs sm:gap-3 sm:px-4 sm:text-sm">
         {Object.entries(colors).map(([label, color]) => (
           <span key={label} className="inline-flex items-center gap-2">
-            <span className="h-3 w-3 rounded-sm" style={{ background: color }} />
+          <span className="h-3 w-3 rounded-full" style={{ background: color }} />
             {label}
           </span>
         ))}
         <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm ring-1 ring-bluewave" style={{ background: uncalculatedColor }} />
+          <span className="h-3 w-3 rounded-full ring-1 ring-bluewave" style={{ background: uncalculatedColor }} />
           Uncalculated
         </span>
         {selectedName && <span className="font-medium text-river">Selected: {selectedName}</span>}

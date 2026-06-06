@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import rainySeasonHistory from "../data/rainy_season_history.json";
 import type { Prediction, RainySeasonRecord, RiskLabel } from "../types";
 import { summarizeRainySeason } from "../utils/rainySeason";
@@ -52,25 +52,36 @@ export default function RiskCharts({
   onClearSelection,
   includeRainySeason = true
 }: RiskChartsProps) {
-  const topCurrentRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 5);
-  const selectedCurrentRisk = predictions.find((item) => item.region_id === selectedRegionId);
-  const cadasterBars: ChartPrediction[] =
-    selectedCurrentRisk && !topCurrentRisk.some((item) => item.region_id === selectedCurrentRisk.region_id)
-      ? [...topCurrentRisk, { ...selectedCurrentRisk, chartLabel: `Selected: ${selectedCurrentRisk.region_name}` }]
-      : topCurrentRisk;
-  const currentRiskChartData = cadasterBars
-    .sort((a, b) => b.risk_score - a.risk_score)
-    .map((item) => ({
-      ...item,
-      chartLabel: item.chartLabel
-        ? item.chartLabel.length > 18
-          ? `${item.chartLabel.slice(0, 18)}...`
-          : item.chartLabel
-        : item.region_name.length > 14
-          ? `${item.region_name.slice(0, 14)}...`
-          : item.region_name
-    }));
-  const topRisk = [...predictions].sort((a, b) => b.risk_score - a.risk_score).slice(0, 10);
+  const sortedByCurrentRisk = useMemo(() => [...predictions].sort((a, b) => b.risk_score - a.risk_score), [predictions]);
+  const topCurrentRisk = useMemo(() => sortedByCurrentRisk.slice(0, 5), [sortedByCurrentRisk]);
+  const selectedCurrentRisk = useMemo(
+    () => predictions.find((item) => item.region_id === selectedRegionId),
+    [predictions, selectedRegionId]
+  );
+  const cadasterBars: ChartPrediction[] = useMemo(
+    () =>
+      selectedCurrentRisk && !topCurrentRisk.some((item) => item.region_id === selectedCurrentRisk.region_id)
+        ? [...topCurrentRisk, { ...selectedCurrentRisk, chartLabel: `Selected: ${selectedCurrentRisk.region_name}` }]
+        : topCurrentRisk,
+    [selectedCurrentRisk, topCurrentRisk]
+  );
+  const currentRiskChartData = useMemo(
+    () =>
+      [...cadasterBars]
+        .sort((a, b) => b.risk_score - a.risk_score)
+        .map((item) => ({
+          ...item,
+          chartLabel: item.chartLabel
+            ? item.chartLabel.length > 18
+              ? `${item.chartLabel.slice(0, 18)}...`
+              : item.chartLabel
+            : item.region_name.length > 14
+              ? `${item.region_name.slice(0, 14)}...`
+              : item.region_name
+        })),
+    [cadasterBars]
+  );
+  const topRisk = useMemo(() => sortedByCurrentRisk.slice(0, 10), [sortedByCurrentRisk]);
   const selectFromChartState = (state: ChartClickState | undefined) => {
     const regionId = state?.activePayload?.[0]?.payload?.region_id;
     if (regionId) onSelectRegion(regionId);
@@ -78,9 +89,9 @@ export default function RiskCharts({
 
   return (
     <div className="grid gap-4">
-      <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
+      <div className="rounded-[18px] border border-white/60 bg-white/90 p-4 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md">
         <div className="mb-3 flex items-start justify-between gap-3 sm:items-center">
-          <h3 className="text-sm font-semibold text-ink">Top current-risk cadasters</h3>
+          <h3 className="font-mono text-sm font-semibold text-ink">Top current-risk cadasters</h3>
           {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
         </div>
         <div className="startup-bar-chart h-56 sm:h-52">
@@ -95,7 +106,7 @@ export default function RiskCharts({
                   <Cell
                     key={item.region_id}
                     fill={colors[item.risk_label]}
-                    stroke={selectedRegionId === item.region_id ? "#DBEAFE" : colors[item.risk_label]}
+                    stroke={selectedRegionId === item.region_id ? "#38BDF8" : colors[item.risk_label]}
                     strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
                     cursor="pointer"
                   />
@@ -106,22 +117,22 @@ export default function RiskCharts({
         </div>
       </div>
 
-      <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
-        <h3 className="mb-3 text-sm font-semibold text-ink">River discharge vs risk score</h3>
+      <div className="rounded-[18px] border border-white/60 bg-ink p-4 text-white shadow-[0_18px_50px_rgb(31_41_55_/_0.16)]">
+        <h3 className="mb-3 font-mono text-sm font-semibold text-white">River discharge vs risk score</h3>
         <div className="h-60 sm:h-56">
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart onClick={(state) => selectFromChartState(state as ChartClickState)}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="river_discharge_ratio" name="river discharge" unit="x" />
-              <YAxis dataKey="risk_score" name="risk score" domain={[0, 1]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.18)" />
+              <XAxis dataKey="river_discharge_ratio" name="river discharge" unit="x" tick={{ fill: "rgba(255,255,255,0.75)", fontSize: 11 }} stroke="rgba(255,255,255,0.35)" />
+              <YAxis dataKey="risk_score" name="risk score" domain={[0, 1]} tick={{ fill: "rgba(255,255,255,0.75)", fontSize: 11 }} stroke="rgba(255,255,255,0.35)" />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-              <Legend />
+              <Legend wrapperStyle={{ color: "rgba(255,255,255,0.8)" }} />
               <Scatter name="Cadasters" data={topRisk} isAnimationActive animationBegin={300} animationDuration={1300} animationEasing="ease-out">
                 {topRisk.map((item) => (
                   <Cell
                     key={item.region_id}
                     fill={colors[item.risk_label]}
-                    stroke={selectedRegionId === item.region_id ? "#DBEAFE" : colors[item.risk_label]}
+                    stroke={selectedRegionId === item.region_id ? "#38BDF8" : colors[item.risk_label]}
                     strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
                     cursor="pointer"
                   />
@@ -151,9 +162,15 @@ export function RainySeasonRiskChart({
   onClearSelection
 }: Pick<RiskChartsProps, "predictions" | "selectedRegionId" | "onSelectRainySeasonRegion" | "onClearSelection">) {
   const [rainyStartupAnimation, setRainyStartupAnimation] = useState(true);
-  const rainySeasonRisk = summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]);
-  const topRainySeasonRisk = rainySeasonRisk.slice(0, 5);
-  const selectedRainySeasonRisk = rainySeasonRisk.find((item) => item.region_id === selectedRegionId);
+  const rainySeasonRisk = useMemo(
+    () => summarizeRainySeason(predictions, rainySeasonHistory as RainySeasonRecord[]),
+    [predictions]
+  );
+  const topRainySeasonRisk = useMemo(() => rainySeasonRisk.slice(0, 5), [rainySeasonRisk]);
+  const selectedRainySeasonRisk = useMemo(
+    () => rainySeasonRisk.find((item) => item.region_id === selectedRegionId),
+    [rainySeasonRisk, selectedRegionId]
+  );
   const selectedRainySeasonIsExtra = Boolean(
     selectedRainySeasonRisk && !topRainySeasonRisk.some((item) => item.region_id === selectedRainySeasonRisk.region_id)
   );
@@ -172,9 +189,9 @@ export function RainySeasonRiskChart({
   }, []);
 
   return (
-    <div className="rounded-md border border-bluewave/60 bg-[#DBEAFE] p-4 shadow-sm">
+    <div className="rounded-[18px] border border-white/60 bg-white/90 p-4 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md">
       <div className="mb-3 flex items-start justify-between gap-3 sm:items-center">
-        <h3 className="text-sm font-semibold text-ink">Average rainy-season flood risk</h3>
+        <h3 className="font-mono text-sm font-semibold text-ink">Average rainy-season flood risk</h3>
         {selectedRegionId && <ClearSelectionButton onClick={onClearSelection} />}
       </div>
       <p className="mb-3 text-xs text-ink/65">Top five cadasters by average rainy-season risk, plus the selected map cadaster when different.</p>
@@ -191,7 +208,7 @@ export function RainySeasonRiskChart({
                   key={item.region_id}
                   fill={colors[item.risk_label]}
                   className={selectedRainySeasonIsExtra && item.region_id === selectedRegionId ? "selected-rainy-bar" : undefined}
-                  stroke={selectedRegionId === item.region_id ? "#DBEAFE" : colors[item.risk_label]}
+                  stroke={selectedRegionId === item.region_id ? "#38BDF8" : colors[item.risk_label]}
                   strokeWidth={selectedRegionId === item.region_id ? 3 : 1}
                   cursor="pointer"
                 />
@@ -208,7 +225,7 @@ function ClearSelectionButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className="rounded-md border border-bluewave/50 bg-panel px-2 py-1 text-xs font-medium text-ink transition hover:border-river hover:bg-river hover:text-white"
+      className="rounded-full border border-bluewave/50 bg-white px-3 py-1 text-xs font-semibold text-ink transition hover:border-river hover:bg-river hover:text-white"
       onClick={onClick}
     >
       Clear selection
