@@ -95,7 +95,7 @@ function App() {
       ) : (
       <main className="watercolor-backdrop min-h-dvh text-ink">
       <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
-      <header className={layout.header}>
+      <header className={`${layout.header} header-slide-up`}>
         <div className={layout.headerInner}>
           <div className={layout.headerRow}>
             <div className="min-w-0">
@@ -378,9 +378,11 @@ function Kpi({ title, value, detail, tone = "neutral", onClick }: { title: strin
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 border-b border-white/20 px-3 py-2 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+    <div className="status-card min-w-0 border-b border-white/20 px-3 py-2 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
       <p className="font-mono text-[0.68rem] font-semibold text-white/60">{label}</p>
-      <p className="mt-1 truncate font-semibold text-white">{value}</p>
+      <div className="overflow-hidden">
+        <p className="status-slide-text mt-1 truncate font-semibold text-white">{value}</p>
+      </div>
     </div>
   );
 }
