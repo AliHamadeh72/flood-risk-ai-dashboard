@@ -7,6 +7,11 @@ type Message = {
   content: string;
 };
 
+type CadasterLookup = {
+  byCode: Map<string, Prediction>;
+  byNameLength: Prediction[];
+};
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -16,26 +21,31 @@ function normalizeText(value: string): string {
     .trim();
 }
 
-function findMentionedCadaster(query: string, predictions: Prediction[]): Prediction | null {
+function createCadasterLookup(predictions: Prediction[]): CadasterLookup {
+  return {
+    byCode: new Map(predictions.map((record) => [record.region_id, record])),
+    byNameLength: [...predictions].sort((a, b) => b.region_name.length - a.region_name.length)
+  };
+}
+
+function findMentionedCadaster(query: string, lookup: CadasterLookup): Prediction | null {
   const normalizedQuery = ` ${normalizeText(query)} `;
   const codeMatch = query.match(/\b\d{3,}\b/);
   if (codeMatch) {
-    const byCode = predictions.find((record) => record.region_id === codeMatch[0]);
+    const byCode = lookup.byCode.get(codeMatch[0]);
     if (byCode) return byCode;
   }
 
   return (
-    [...predictions]
-      .sort((a, b) => b.region_name.length - a.region_name.length)
-      .find((record) => {
-        const normalizedName = normalizeText(record.region_name);
-        return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
-      }) ?? null
+    lookup.byNameLength.find((record) => {
+      const normalizedName = normalizeText(record.region_name);
+      return normalizedName.length > 2 && normalizedQuery.includes(` ${normalizedName} `);
+    }) ?? null
   );
 }
 
-function fallbackAnswer(question: string, predictions: Prediction[]): string {
-  const mentioned = findMentionedCadaster(question, predictions);
+function fallbackAnswer(question: string, lookup: CadasterLookup): string {
+  const mentioned = findMentionedCadaster(question, lookup);
   if (mentioned) {
     return [
       `I found ${mentioned.region_name} in the local dashboard data.`,
@@ -66,6 +76,7 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
   const [messages, setMessages] = useState<Message[]>(starter);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const cadasterLookup = useMemo(() => createCadasterLookup(predictions), [predictions]);
 
   async function submit() {
     const question = input.trim();
@@ -73,7 +84,7 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
 
     const userMessage: Message = { role: "user", content: question };
     const nextMessages = [...messages, userMessage];
-    const mentionedCadaster = findMentionedCadaster(question, predictions);
+    const mentionedCadaster = findMentionedCadaster(question, cadasterLookup);
     if (mentionedCadaster) {
       onSelectRegion(mentionedCadaster.region_id);
     }
@@ -96,9 +107,9 @@ export default function Chatbot({ predictions, onSelectRegion }: { predictions: 
       if (!response.ok) throw new Error("Backend chat request failed");
 
       const payload = (await response.json()) as { answer?: string };
-      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? fallbackAnswer(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: payload.answer ?? fallbackAnswer(question, cadasterLookup) }]);
     } catch {
-      setMessages((current) => [...current, { role: "assistant", content: fallbackAnswer(question, predictions) }]);
+      setMessages((current) => [...current, { role: "assistant", content: fallbackAnswer(question, cadasterLookup) }]);
     } finally {
       setIsSending(false);
     }

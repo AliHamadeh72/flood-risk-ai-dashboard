@@ -54,6 +54,7 @@ const SYSTEM_PROMPT = [
 ].join(" ");
 
 let cachedPredictions;
+let cachedPredictionData;
 
 function normalizeText(value) {
   return String(value || "")
@@ -71,6 +72,35 @@ function predictions() {
   return cachedPredictions;
 }
 
+function predictionData() {
+  if (cachedPredictionData) return cachedPredictionData;
+
+  const records = predictions();
+  const byCode = new Map();
+  const byNameLength = [...records].sort((a, b) => String(b.region_name).length - String(a.region_name).length);
+  const riskSorted = records
+    .filter((record) => String(record.region_name).toLowerCase() !== "conflict")
+    .sort((a, b) => riskScore(b) - riskScore(a));
+  const summary = { high: 0, medium: 0, low: 0, positive: 0 };
+
+  for (const record of records) {
+    byCode.set(String(record.region_id), record);
+    if (record.risk_label === "High") summary.high += 1;
+    if (record.risk_label === "Medium") summary.medium += 1;
+    if (record.risk_label === "Low") summary.low += 1;
+    if (riskScore(record) > 0) summary.positive += 1;
+  }
+
+  cachedPredictionData = {
+    records,
+    byCode,
+    byNameLength,
+    riskSorted,
+    summary
+  };
+  return cachedPredictionData;
+}
+
 function riskScore(record) {
   const score = Number(record.risk_score || 0);
   return Number.isFinite(score) ? score : 0;
@@ -81,20 +111,18 @@ function formatRecord(record) {
 }
 
 function mentionedCadaster(question) {
-  const records = predictions();
+  const data = predictionData();
   const codeMatch = question.match(/\b\d{3,}\b/);
   if (codeMatch) {
-    const byCode = records.find((record) => String(record.region_id) === codeMatch[0]);
+    const byCode = data.byCode.get(codeMatch[0]);
     if (byCode) return byCode;
   }
 
   const normalizedQuestion = ` ${normalizeText(question)} `;
-  return [...records]
-    .sort((a, b) => String(b.region_name).length - String(a.region_name).length)
-    .find((record) => {
-      const normalizedName = normalizeText(record.region_name);
-      return normalizedName.length > 2 && normalizedQuestion.includes(` ${normalizedName} `);
-    });
+  return data.byNameLength.find((record) => {
+    const normalizedName = normalizeText(record.region_name);
+    return normalizedName.length > 2 && normalizedQuestion.includes(` ${normalizedName} `);
+  });
 }
 
 function placeMatches(question, limit = 5) {
@@ -106,11 +134,12 @@ function placeMatches(question, limit = 5) {
     for (const alias of PLACE_ALIASES[term] || []) expandedTerms.add(alias);
   }
   if (expandedTerms.size === 0) return [];
+  const terms = [...expandedTerms];
 
-  return predictions()
+  return predictionData().records
     .map((record) => {
       const name = normalizeText(record.region_name);
-      const score = [...expandedTerms].reduce((total, term) => total + (name.includes(term) ? 1 : 0), 0);
+      const score = terms.reduce((total, term) => total + (name.includes(term) ? 1 : 0), 0);
       return { record, score };
     })
     .filter((item) => item.score > 0)
@@ -132,13 +161,12 @@ function isDataRequest(question) {
 }
 
 function topRecords(question) {
-  const records = predictions().filter((record) => String(record.region_name).toLowerCase() !== "conflict");
-  const sorted = records.sort((a, b) => riskScore(b) - riskScore(a));
-  return normalizeText(question).includes("lowest") ? sorted.reverse().slice(0, 5) : sorted.slice(0, 5);
+  const sorted = predictionData().riskSorted;
+  return normalizeText(question).includes("lowest") ? [...sorted].reverse().slice(0, 5) : sorted.slice(0, 5);
 }
 
 function dataContext(question) {
-  const records = predictions();
+  const { records, summary } = predictionData();
   const mentioned = mentionedCadaster(question);
   if (mentioned) return `Matched cadaster record:\n- ${formatRecord(mentioned)}`;
 
@@ -147,17 +175,13 @@ function dataContext(question) {
 
   const normalized = normalizeText(question);
   if (["highest", "top", "lowest"].some((term) => normalized.includes(term))) {
-    const positiveCount = records.filter((record) => riskScore(record) > 0).length;
-    const summary = positiveCount === 0 && !normalized.includes("lowest")
+    const summaryText = summary.positive === 0 && !normalized.includes("lowest")
       ? "No cadaster currently has a positive flood-risk score in the loaded prediction records."
-      : `${positiveCount} of ${records.length} records have a positive flood-risk score.`;
-    return `${summary}\nRelevant records:\n${topRecords(question).map((record) => `- ${formatRecord(record)}`).join("\n")}`;
+      : `${summary.positive} of ${records.length} records have a positive flood-risk score.`;
+    return `${summaryText}\nRelevant records:\n${topRecords(question).map((record) => `- ${formatRecord(record)}`).join("\n")}`;
   }
 
-  const highCount = records.filter((record) => record.risk_label === "High").length;
-  const mediumCount = records.filter((record) => record.risk_label === "Medium").length;
-  const lowCount = records.filter((record) => record.risk_label === "Low").length;
-  return `Dataset summary: ${records.length} cadaster prediction records. Labels: ${highCount} High, ${mediumCount} Medium, ${lowCount} Low.`;
+  return `Dataset summary: ${records.length} cadaster prediction records. Labels: ${summary.high} High, ${summary.medium} Medium, ${summary.low} Low.`;
 }
 
 async function ollamaChat(messages) {

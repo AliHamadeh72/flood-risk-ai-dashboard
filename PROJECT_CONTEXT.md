@@ -15,6 +15,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - React + Vite + TypeScript frontend in `frontend/`
 - Leaflet cadaster risk map
 - Recharts visualizations
+- Replicate-inspired dashboard UI using rounded model-card panels, pill controls, animated blue background, skeleton loaders, and entrance animations
 - Rainy-season historical chart from generated Open-Meteo-style records
 - Static JSON prediction data for GitHub Pages
 - Open-Meteo cadaster weather pipeline in `ml/fetch_open_meteo_cadasters.py`
@@ -24,6 +25,7 @@ The project is a decision-support prototype, not an official emergency warning s
 - All-cadaster rainy-season risk builder in `ml/build_rainy_season_risk.py`
 - RAG document and TF-IDF retrieval utilities in `rag/`
 - Optional FastAPI backend in `backend/`
+- Vercel serverless chat endpoint in `api/chat.js`
 
 ## Cadaster Data
 
@@ -105,17 +107,36 @@ distribution: Low=1, Medium=1, High=1
 The risk map now uses cadasters instead of demo region polygons.
 
 - Calculated cadasters are colored by risk:
-  - Low = green
-  - Medium = orange
-  - High = red
-- Uncalculated cadasters are grey.
+  - Low = light blue
+  - Medium = strong blue
+  - High = deep navy
+- Uncalculated cadasters are pale blue.
 - Popup content shows cadaster name/code, risk level, rainfall, and recommended planning action when available.
+- The map supports current forecast and rainy-season modes.
+- The rainy-season toggle has a tooltip and optimistic switching label.
+- Chatbot cadaster queries can select/zoom the matching cadaster on the map.
+
+## Frontend UX Notes
+
+- The initial loading spinner was replaced with skeleton loaders.
+- Skeleton loaders mirror the major page regions: header/nav, status strip, KPI cards, map, charts, chatbot, rainy-season chart, model info, and prediction table.
+- The first load intentionally delays briefly so the skeleton state is visible during local testing.
+- KPI text animates in from the left.
+- The status strip values (`Active layer`, `Calculated cadasters`, `High-risk share`, and `Selected cadaster`) use the same slide-in style as KPI text, with slight staggered delays.
+- The header animates upward from the bottom after the skeleton state ends.
+- The prediction table paginates 50 rows at a time.
+- The chart area shows top-five current-risk cadasters plus the selected cadaster when it is outside the top five.
+- The chatbot is positioned below the map and beside the rainy-season chart in the desktop layout so map, chat, and charts can be scanned together.
 
 ## RAG Flow
 
 - `rag/build_rag_docs.py` converts prediction rows into grounded text documents.
 - `rag/build_vector_index.py` builds a local TF-IDF retrieval index.
 - `rag/retrieve_context.py` retrieves relevant records and produces grounded fallback answers.
+- The frontend chatbot calls `VITE_BACKEND_API_URL/chat` when configured, otherwise `/api/chat`.
+- `api/chat.js` provides a serverless chat endpoint for Vercel deployments.
+- The chat endpoint can answer basic conversation, Red Cross-style general flood safety guidance, and grounded cadaster flood-risk questions.
+- Data questions are answered from the dashboard prediction records. General conversation is routed through the configured Ollama model when available.
 
 The chatbot should not invent values. If the retrieved records do not contain an answer, it should say the data is unavailable.
 
@@ -131,11 +152,24 @@ FastAPI endpoints:
 
 Environment variables are managed through `.env`, which is ignored by Git.
 
+Important environment variables:
+
+- `OLLAMA_BASE_URL`
+- `OLLAMA_MODEL`
+- `OLLAMA_API_KEY`
+- `USE_OLLAMA_WITHOUT_KEY`
+- `BACKEND_API_URL`
+
+Do not commit `.env` or expose API keys in frontend code.
+
 ## Deployment Notes
 
-- GitHub Pages deploys the static frontend.
+- Vercel production deployment is configured and currently used for the public app.
+- Production alias: `https://flood-risk-ai-dashboard.vercel.app`
+- The frontend can also be deployed statically from precomputed JSON.
 - Python and FastAPI must run locally or on a separate backend host.
 - Static deployment uses precomputed cadaster GeoJSON and risk prediction JSON.
+- GitHub Pages workflows previously failed when Pages was not enabled/configured for GitHub Actions; Vercel is the working production deployment path.
 
 ## Validation Notes
 
@@ -146,9 +180,13 @@ Recent checks:
 - Open-Meteo prediction builder wrote one sample cadaster prediction.
 - RAG documents rebuilt from the Open-Meteo prediction output.
 - Frontend production build passed.
+- Vercel production deploy succeeded after the Replicate-inspired redesign.
+- Local frontend testing has used Vite URLs such as `http://127.0.0.1:5173/flood-risk-ai-dashboard/` and, for the separate cloned repo only, `http://127.0.0.1:5174/flood-risk-ai-dashboard/`.
+- The in-app browser automation bridge has intermittently failed in this Windows sandbox with `windows sandbox failed: spawn setup refresh`; HTTP checks and `npm run build` have been used for verification when that happens.
 
 ## Limitations
 
 - The included sample Open-Meteo CSV currently covers one cadaster.
 - Full-country updates require many Open-Meteo requests and should be run with caching and rate limiting.
 - This is an analytical portfolio prototype, not an official emergency warning system.
+- The app currently presents flood-risk data; any fire-risk fork/repo should be treated as a separate project and renamed/refactored deliberately.

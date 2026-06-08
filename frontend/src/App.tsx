@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Activity, ArrowLeftRight, CloudRain, Map, MessageSquare, Table2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, ArrowLeftRight, CloudRain, Map as MapIcon, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
 import rainySeasonHistory from "./data/rainy_season_history.json";
 import Chatbot from "./components/Chatbot";
@@ -11,10 +11,11 @@ import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
 const data = predictions as Prediction[];
 const rainyData = rainySeasonHistory as RainySeasonRecord[];
+const dataByRegion = new globalThis.Map(data.map((item) => [item.region_id, item]));
 const backgroundSpans = Array.from({ length: 25 }, (_, index) => <span key={index} />);
 const navItems = [
   ["dashboard", "Dashboard", Activity],
-  ["map", "Map", Map],
+  ["map", "Map", MapIcon],
   ["table", "Table", Table2],
   ["chatbot", "Chatbot", MessageSquare]
 ] as const;
@@ -32,26 +33,34 @@ const layout = {
   cardPadded: "rounded-[18px] border border-white/60 bg-white/90 p-4 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md"
 };
 
+const dashboardStats = (() => {
+  const highRisk: Prediction[] = [];
+  let highest: Prediction | undefined;
+  let rainfallTotal = 0;
+  let latestDate = "";
+
+  for (const item of data) {
+    if (item.risk_label === "High") highRisk.push(item);
+    if (item.risk_score > 0 && (!highest || item.risk_score > highest.risk_score)) highest = item;
+    rainfallTotal += item.rainfall_7d;
+    if (item.date > latestDate) latestDate = item.date;
+  }
+
+  return {
+    highRisk,
+    highest,
+    avgRainfall: rainfallTotal / data.length,
+    latestDate
+  };
+})();
+
 function App() {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const [optimisticModeLabel, setOptimisticModeLabel] = useState<string | null>(null);
-  const dashboardStats = useMemo(() => {
-    const highRisk = data.filter((item) => item.risk_label === "High");
-    const positiveRisk = data.filter((item) => item.risk_score > 0);
-    const highest = [...positiveRisk].sort((a, b) => b.risk_score - a.risk_score)[0];
-    const avgRainfall = data.reduce((sum, item) => sum + item.rainfall_7d, 0) / data.length;
-    const sortedDates = data.map((item) => item.date).sort();
-
-    return {
-      highRisk,
-      highest,
-      avgRainfall,
-      latestDate: sortedDates[sortedDates.length - 1]
-    };
-  }, []);
+  const selectedRegionName = selectedRegionId ? dataByRegion.get(selectedRegionId)?.region_name ?? selectedRegionId : "None";
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowSkeleton(false), 1200);
@@ -125,7 +134,7 @@ function App() {
           <StatusItem label="Active layer" value={mapMode === "rainy" ? "Rainy season" : "Current forecast"} />
           <StatusItem label="Calculated cadasters" value={data.length.toString()} />
           <StatusItem label="High-risk share" value={`${Math.round((dashboardStats.highRisk.length / data.length) * 100)}%`} />
-          <StatusItem label="Selected cadaster" value={selectedRegionId ? data.find((item) => item.region_id === selectedRegionId)?.region_name ?? selectedRegionId : "None"} />
+          <StatusItem label="Selected cadaster" value={selectedRegionName} />
         </div>
       </section>
 
@@ -136,7 +145,7 @@ function App() {
           title="Highest-risk region"
           value={dashboardStats.highest ? dashboardStats.highest.region_name : "None"}
           detail={dashboardStats.highest ? `${Math.round(dashboardStats.highest.risk_score * 100)}% model confidence` : "No cadaster has current flood risk"}
-          onClick={dashboardStats.highest ? () => selectRegion(dashboardStats.highest.region_id) : undefined}
+          onClick={dashboardStats.highest ? () => selectRegion(dashboardStats.highest!.region_id) : undefined}
         />
         <Kpi tone="safe" title="Avg 7-day rainfall" value={`${dashboardStats.avgRainfall.toFixed(1)} mm`} detail="Across selected regions" />
         <Kpi tone="neutral" title="Weather source" value="Open-Meteo" detail="Forecast and historical cadaster pipeline" />
@@ -145,7 +154,7 @@ function App() {
       <section className={layout.mapChartsGrid}>
         <div id="map" className="page-section min-h-[360px] sm:min-h-[440px]">
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <SectionTitle icon={<Map className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
+            <SectionTitle icon={<MapIcon className="h-5 w-5" />} title={mapMode === "rainy" ? "Rainy Season Risk Map" : "Current Forecast Risk Map"} />
             <div className="flex flex-col items-start gap-1 sm:items-end">
               <button
                 type="button"
