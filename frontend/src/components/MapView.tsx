@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
 import cadasters from "../data/cadasters.json";
@@ -26,56 +26,58 @@ type MapViewProps = {
   rainySeasonRecords: RainySeasonRecord[];
   mapMode: MapMode;
   selectedRegionId: string | null;
+  alertRegionId?: string | null;
   zoomRequestId: number;
   onSelectRegion: (regionId: string) => void;
 };
 
-export default function MapView({ predictions, rainySeasonRecords, mapMode, selectedRegionId, zoomRequestId, onSelectRegion }: MapViewProps) {
-  const byRegion = useMemo(() => new Map(predictions.map((item) => [item.region_id, item])), [predictions]);
+export default function MapView({ predictions, rainySeasonRecords, mapMode, selectedRegionId, alertRegionId, zoomRequestId, onSelectRegion }: MapViewProps) {
+  const isMobile = useIsMobileViewport();
+  const byRegion = new Map(predictions.map((item) => [item.region_id, item]));
+  const byCadaster = new Map(predictions.map((item) => [item.region_id, item]));
   const rainyByRegion = useMemo(
     () => new Map(summarizeRainySeason(predictions, rainySeasonRecords).map((item) => [item.region_id, item])),
     [predictions, rainySeasonRecords]
   );
-  const selectedPrediction = useMemo(
-    () => predictions.find((item) => item.region_id === selectedRegionId),
-    [predictions, selectedRegionId]
-  );
   const selectedName =
     mapMode === "rainy"
-      ? rainyByRegion.get(selectedRegionId ?? "")?.region_name ?? selectedPrediction?.region_name
-      : selectedPrediction?.region_name;
+      ? rainyByRegion.get(selectedRegionId ?? "")?.region_name ?? predictions.find((item) => item.region_id === selectedRegionId)?.region_name
+      : predictions.find((item) => item.region_id === selectedRegionId)?.region_name;
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-white/60 bg-white/90 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md">
+    <div className="overflow-hidden rounded-md border border-bluewave/60 bg-[#DBEAFE] shadow-sm">
       <MapContainer center={[33.88, 35.65]} zoom={8} scrollWheelZoom className="h-[360px] w-full sm:h-[440px]">
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} />
+        <ZoomToCadaster selectedRegionId={selectedRegionId} zoomRequestId={zoomRequestId} isMobile={isMobile} />
         <GeoJSON
           key={`${mapMode}-${selectedRegionId ?? "no-selection"}`}
           data={cadasters as never}
           style={(feature) => {
             const properties = feature?.properties as RegionProps | undefined;
             const featureId = properties?.region_id ?? properties?.ACS_Code ?? "";
-            const prediction = byRegion.get(featureId);
+            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
             const rainySummary = rainyByRegion.get(featureId);
             const isSelected = selectedRegionId === featureId;
+            const isAlerted = alertRegionId === featureId;
             const layerRisk = mapMode === "rainy" ? rainySummary?.risk_label : prediction?.risk_label;
             const color = layerRisk ? colors[layerRisk] : uncalculatedColor;
             const fillOpacity = layerRisk === "Low" ? 0.1 : layerRisk ? 0.28 : 0.16;
             const selectedFillOpacity = layerRisk === "Low" ? 0.22 : 0.42;
+            const strokeColor = isAlerted ? "#001F5B" : color;
             return {
-              color,
+              color: strokeColor,
               fillColor: color,
-              fillOpacity: isSelected ? selectedFillOpacity : fillOpacity,
-              opacity: isSelected ? 1 : layerRisk ? 0.7 : 0.45,
-              weight: isSelected ? 3 : layerRisk ? 1.2 : 0.6
+              fillOpacity: isSelected || isAlerted ? selectedFillOpacity : fillOpacity,
+              opacity: isSelected || isAlerted ? 1 : layerRisk ? 0.7 : 0.45,
+              weight: isAlerted ? 4 : isSelected ? 3 : layerRisk ? 1.2 : 0.6,
+              dashArray: isAlerted ? "6 4" : undefined
             };
           }}
           onEachFeature={(feature, layer) => {
             const properties = feature.properties as RegionProps;
             const featureId = properties.region_id ?? properties.ACS_Code ?? "";
             const label = properties.region_name ?? properties.Cadaster ?? properties.name ?? properties.ACS_Code ?? "Uncalculated cadaster";
-            const prediction = byRegion.get(featureId);
+            const prediction = byRegion.get(featureId) ?? byCadaster.get(featureId);
             const rainySummary = rainyByRegion.get(featureId);
             layer.bindPopup(
               mapMode === "rainy" && rainySummary
@@ -90,15 +92,15 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
           }}
         />
       </MapContainer>
-      <div className="flex flex-wrap gap-2 border-t border-white/70 bg-panel/80 px-3 py-3 text-xs sm:gap-3 sm:px-4 sm:text-sm">
+      <div className="flex flex-wrap gap-2 border-t border-bluewave/40 px-3 py-3 text-xs sm:gap-3 sm:px-4 sm:text-sm">
         {Object.entries(colors).map(([label, color]) => (
           <span key={label} className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full" style={{ background: color }} />
+            <span className="h-3 w-3 rounded-sm" style={{ background: color }} />
             {label}
           </span>
         ))}
         <span className="inline-flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full ring-1 ring-bluewave" style={{ background: uncalculatedColor }} />
+          <span className="h-3 w-3 rounded-sm ring-1 ring-bluewave" style={{ background: uncalculatedColor }} />
           Uncalculated
         </span>
         {selectedName && <span className="font-medium text-river">Selected: {selectedName}</span>}
@@ -108,7 +110,7 @@ export default function MapView({ predictions, rainySeasonRecords, mapMode, sele
   );
 }
 
-function ZoomToCadaster({ selectedRegionId, zoomRequestId }: { selectedRegionId: string | null; zoomRequestId: number }) {
+function ZoomToCadaster({ selectedRegionId, zoomRequestId, isMobile }: { selectedRegionId: string | null; zoomRequestId: number; isMobile: boolean }) {
   const map = useMap();
   const selectedFeature = useMemo(() => {
     if (!selectedRegionId) return null;
@@ -124,13 +126,27 @@ function ZoomToCadaster({ selectedRegionId, zoomRequestId }: { selectedRegionId:
     if (bounds.isValid()) {
       map.flyToBounds(bounds, {
         animate: true,
-        duration: 1.35,
-        easeLinearity: 0.2,
-        maxZoom: 13,
-        padding: [36, 36]
+        duration: isMobile ? 0.75 : 1.35,
+        easeLinearity: isMobile ? 0.35 : 0.2,
+        maxZoom: isMobile ? 12 : 13,
+        padding: isMobile ? [24, 24] : [36, 36]
       });
     }
-  }, [map, selectedFeature, zoomRequestId]);
+  }, [map, selectedFeature, zoomRequestId, isMobile]);
 
   return null;
+}
+
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() => (typeof window === "undefined" ? false : window.matchMedia("(max-width: 640px)").matches));
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isMobile;
 }

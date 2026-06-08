@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Activity, ArrowLeftRight, CloudRain, Map as MapIcon, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
 import rainySeasonHistory from "./data/rainy_season_history.json";
+import Alert from "./components/Alert";
 import Chatbot from "./components/Chatbot";
 import MapView from "./components/MapView";
 import ModelInfo from "./components/ModelInfo";
@@ -57,6 +58,7 @@ const dashboardStats = (() => {
 function App() {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [alertRegionId, setAlertRegionId] = useState<string | null>(null);
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const [optimisticModeLabel, setOptimisticModeLabel] = useState<string | null>(null);
@@ -88,6 +90,13 @@ function App() {
     });
   };
   const clearSelection = () => setSelectedRegionId(null);
+  const highlightAlertRegion = (regionId: string) => {
+    setMapMode("current");
+    setAlertRegionId(regionId);
+    setSelectedRegionId(regionId);
+    setZoomRequestId((requestId) => requestId + 1);
+    document.getElementById("map")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const toggleMapMode = () => {
     setMapMode((current) => {
       const next = current === "current" ? "rainy" : "current";
@@ -104,6 +113,7 @@ function App() {
       ) : (
       <main className="watercolor-backdrop min-h-dvh text-ink">
       <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
+      <Alert predictions={data} onHighlightRegion={highlightAlertRegion} />
       <header className={`${layout.header} header-slide-up`}>
         <div className={layout.headerInner}>
           <div className={layout.headerRow}>
@@ -176,6 +186,7 @@ function App() {
             rainySeasonRecords={rainyData}
             mapMode={mapMode}
             selectedRegionId={selectedRegionId}
+            alertRegionId={alertRegionId}
             zoomRequestId={zoomRequestId}
             onSelectRegion={selectRegion}
           />
