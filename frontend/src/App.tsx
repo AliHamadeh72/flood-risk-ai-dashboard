@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeftRight, CloudRain, Map as MapIcon, MessageSquare, Table2 } from "lucide-react";
 import predictions from "./data/risk_predictions.json";
 import rainySeasonHistory from "./data/rainy_season_history.json";
@@ -10,9 +10,8 @@ import RiskCharts, { RainySeasonRiskChart } from "./components/RiskCharts";
 import RiskTable from "./components/RiskTable";
 import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 
-const data = predictions as Prediction[];
+const baseData = predictions as Prediction[];
 const rainyData = rainySeasonHistory as RainySeasonRecord[];
-const dataByRegion = new globalThis.Map(data.map((item) => [item.region_id, item]));
 const backgroundSpans = Array.from({ length: 25 }, (_, index) => <span key={index} />);
 const navItems = [
   ["dashboard", "Dashboard", Activity],
@@ -34,13 +33,21 @@ const layout = {
   cardPadded: "rounded-[18px] border border-white/60 bg-white/90 p-4 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md"
 };
 
-const dashboardStats = (() => {
+const testAlertTarget = (() => {
+  let latestDate = "";
+  for (const item of baseData) {
+    if (item.date > latestDate) latestDate = item.date;
+  }
+  return baseData.find((item) => item.date === latestDate && item.risk_label !== "High") ?? baseData.find((item) => item.date === latestDate) ?? baseData[0];
+})();
+
+const calculateDashboardStats = (records: Prediction[]) => {
   const highRisk: Prediction[] = [];
   let highest: Prediction | undefined;
   let rainfallTotal = 0;
   let latestDate = "";
 
-  for (const item of data) {
+  for (const item of records) {
     if (item.risk_label === "High") highRisk.push(item);
     if (item.risk_score > 0 && (!highest || item.risk_score > highest.risk_score)) highest = item;
     rainfallTotal += item.rainfall_7d;
@@ -50,18 +57,23 @@ const dashboardStats = (() => {
   return {
     highRisk,
     highest,
-    avgRainfall: rainfallTotal / data.length,
+    avgRainfall: rainfallTotal / records.length,
     latestDate
   };
-})();
+};
 
 function App() {
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [dashboardData, setDashboardData] = useState<Prediction[]>(baseData);
+  const [isTestAlertActive, setIsTestAlertActive] = useState(false);
+  const [alertRenderKey, setAlertRenderKey] = useState(0);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [alertRegionId, setAlertRegionId] = useState<string | null>(null);
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const [optimisticModeLabel, setOptimisticModeLabel] = useState<string | null>(null);
+  const dashboardStats = useMemo(() => calculateDashboardStats(dashboardData), [dashboardData]);
+  const dataByRegion = useMemo(() => new globalThis.Map(dashboardData.map((item) => [item.region_id, item])), [dashboardData]);
   const selectedRegionName = selectedRegionId ? dataByRegion.get(selectedRegionId)?.region_name ?? selectedRegionId : "None";
 
   useEffect(() => {
@@ -105,6 +117,28 @@ function App() {
     });
     window.setTimeout(() => setOptimisticModeLabel(null), 700);
   };
+  const triggerTestAlert = () => {
+    if (!testAlertTarget) return;
+    setDashboardData((records) =>
+      records.map((item) =>
+        item.region_id === testAlertTarget.region_id && item.date === testAlertTarget.date
+          ? {
+              ...item,
+              risk_label: "High",
+              risk_score: 1,
+              rainfall_7d: Math.max(item.rainfall_7d, 28)
+            }
+          : item
+      )
+    );
+    setIsTestAlertActive(true);
+    setAlertRenderKey((key) => key + 1);
+  };
+  const resetTestAlert = () => {
+    setDashboardData(baseData);
+    setIsTestAlertActive(false);
+    setAlertRenderKey((key) => key + 1);
+  };
 
   return (
     <>
@@ -138,14 +172,24 @@ function App() {
         </div>
       </header>
       <div className="flood-alert-layer" aria-live="polite">
-        <Alert predictions={data} onHighlightRegion={highlightAlertRegion} />
+        <Alert key={alertRenderKey} predictions={dashboardData} onHighlightRegion={highlightAlertRegion} />
+      </div>
+      <div className="alert-test-controls mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-4 sm:px-6 lg:px-8">
+        <span className="alert-test-controls__label">Alert test</span>
+        <button type="button" className="alert-test-controls__button" onClick={triggerTestAlert} disabled={isTestAlertActive || !testAlertTarget}>
+          Trigger high risk
+        </button>
+        <button type="button" className="alert-test-controls__button alert-test-controls__button--ghost" onClick={resetTestAlert} disabled={!isTestAlertActive}>
+          Reverse
+        </button>
+        {testAlertTarget && <span className="alert-test-controls__meta">{testAlertTarget.region_name}</span>}
       </div>
 
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
         <div className="grid overflow-hidden rounded-[18px] border border-white/60 bg-ink text-xs text-white shadow-[0_18px_50px_rgb(31_41_55_/_0.14)] sm:grid-cols-4">
           <StatusItem label="Active layer" value={mapMode === "rainy" ? "Rainy season" : "Current forecast"} />
-          <StatusItem label="Calculated cadasters" value={data.length.toString()} />
-          <StatusItem label="High-risk share" value={`${Math.round((dashboardStats.highRisk.length / data.length) * 100)}%`} />
+          <StatusItem label="Calculated cadasters" value={dashboardData.length.toString()} />
+          <StatusItem label="High-risk share" value={`${Math.round((dashboardStats.highRisk.length / dashboardData.length) * 100)}%`} />
           <StatusItem label="Selected cadaster" value={selectedRegionName} />
         </div>
       </section>
@@ -184,7 +228,7 @@ function App() {
             </div>
           </div>
           <MapView
-            predictions={data}
+            predictions={dashboardData}
             rainySeasonRecords={rainyData}
             mapMode={mapMode}
             selectedRegionId={selectedRegionId}
@@ -196,7 +240,7 @@ function App() {
         <div className="xl:max-h-[520px] xl:overflow-y-auto xl:pr-1">
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Charts" />
           <RiskCharts
-            predictions={data}
+            predictions={dashboardData}
             selectedRegionId={selectedRegionId}
             onSelectRegion={selectRegion}
             onSelectRainySeasonRegion={selectRainySeasonRegion}
@@ -209,12 +253,12 @@ function App() {
       <section className={layout.chatRainyGrid}>
         <div id="chatbot" className="page-section">
           <SectionTitle icon={<MessageSquare className="h-5 w-5" />} title="RAG Chatbot" />
-          <Chatbot predictions={data} onSelectRegion={focusCurrentRegion} />
+          <Chatbot predictions={dashboardData} onSelectRegion={focusCurrentRegion} />
         </div>
         <div>
           <SectionTitle icon={<CloudRain className="h-5 w-5" />} title="Rainy Season" />
           <RainySeasonRiskChart
-            predictions={data}
+            predictions={dashboardData}
             selectedRegionId={selectedRegionId}
             onSelectRainySeasonRegion={selectRainySeasonRegion}
             onClearSelection={clearSelection}
@@ -228,7 +272,7 @@ function App() {
 
       <section id="table" className={`page-section ${layout.fullWidthSection}`}>
         <SectionTitle icon={<Table2 className="h-5 w-5" />} title="Prediction Table" />
-        <RiskTable predictions={data} />
+        <RiskTable predictions={dashboardData} />
       </section>
       </main>
       )}

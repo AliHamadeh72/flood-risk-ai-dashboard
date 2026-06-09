@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import type { Prediction } from "../types";
 
@@ -11,16 +11,48 @@ export default function Alert({ predictions, onHighlightRegion }: AlertProps) {
   const [showDesktopAlert, setShowDesktopAlert] = useState(true);
 
   const primaryAlert = useMemo(() => {
+    let latestDate = "";
     let active: Prediction | undefined;
-    let highest: Prediction | undefined;
 
     for (const item of predictions) {
-      if (!highest || item.risk_score > highest.risk_score) highest = item;
-      if (item.risk_label === "High" && (!active || item.risk_score > active.risk_score)) active = item;
+      if (item.date > latestDate) latestDate = item.date;
     }
 
-    return active ?? highest;
+    for (const item of predictions) {
+      if (item.date !== latestDate || item.risk_label !== "High") continue;
+      if (!active || item.risk_score > active.risk_score) active = item;
+    }
+
+    return active;
   }, [predictions]);
+
+  useEffect(() => {
+    if (!primaryAlert || typeof window === "undefined" || !("Notification" in window)) return;
+
+    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
+    if (!isMobileViewport) return;
+
+    const notificationKey = `flood-alert:${primaryAlert.region_id}:${primaryAlert.date}`;
+    if (window.localStorage.getItem(notificationKey)) return;
+
+    const showSystemNotification = () => {
+      if (Notification.permission !== "granted") return;
+      new Notification("High flood-risk signal", {
+        body: `${primaryAlert.region_name}: ${Math.round(primaryAlert.risk_score * 100)}% risk, ${primaryAlert.rainfall_7d} mm rain.`,
+        tag: notificationKey
+      });
+      window.localStorage.setItem(notificationKey, "shown");
+    };
+
+    if (Notification.permission === "default") {
+      void Notification.requestPermission().then((permission) => {
+        if (permission === "granted") showSystemNotification();
+      });
+      return;
+    }
+
+    showSystemNotification();
+  }, [primaryAlert]);
 
   if (!showDesktopAlert || !primaryAlert) return null;
 
