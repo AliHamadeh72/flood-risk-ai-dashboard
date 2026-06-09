@@ -9,7 +9,7 @@ html {
 
 body {
   margin: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -36,65 +36,129 @@ body {
   display: none;
 }
 
-.popup {
+.flood-alert {
   animation: alert-slide-in 1.05s cubic-bezier(0.18, 0.82, 0.22, 1) both;
 }
 
-.alert-panel {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 1000;
-  width: min(24rem, calc(100vw - 2rem));
-  padding: 0.75rem;
-  color: #1f2937;
-  background: rgb(255 255 255 / 95%);
-  border: 1px solid rgb(255 255 255 / 75%);
-  border-radius: 8px;
-  box-shadow: 0 18px 48px rgb(31 41 55 / 22%);
-  backdrop-filter: blur(10px);
+.app-header {
+  position: static;
+  overflow: visible;
 }
 
-.alert-panel__content {
+.flood-alert-layer {
+  position: fixed;
+  top: 70px;
+  right: 0;
+  left: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  width: min(80rem, 100%);
+  min-height: 84px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 12px 1.5rem 0;
+  pointer-events: none;
+}
+
+.flood-alert {
+  position: relative;
+  width: min(400px, calc(100vw - 32px));
+  overflow: hidden;
+  padding: 12px;
+  border-radius: 12px;
+  color: #1f2937;
+  background: rgb(248 252 255 / 94%);
+  border: 1px solid rgb(96 165 250 / 34%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 85%) inset,
+    0 18px 42px rgb(0 31 91 / 16%);
+  text-shadow: none;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color 0.5s ease,
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
+}
+
+.flood-alert:hover {
+  background: rgb(255 255 255 / 97%);
+  border-color: rgb(56 189 248 / 58%);
+}
+
+.flood-alert__content {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
-.alert-panel__icon {
+.flood-alert::before {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #38bdf8, #2563eb);
+  content: "";
+}
+
+.flood-alert__mark {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  color: #001f5b;
-  background: #dbeafe;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
+  background: #dbeafe;
+  color: #001f5b;
+  box-shadow: inset 0 0 0 1px rgb(56 189 248 / 36%);
+  animation: alert-icon-pulse 1.8s ease-in-out infinite;
 }
 
-.alert-panel__icon-svg,
-.alert-panel__button-svg {
-  width: 1rem;
-  height: 1rem;
+.flood-alert__icon-svg,
+.flood-alert__button-svg {
+  width: 18px;
+  height: 18px;
 }
 
-.alert-panel__message {
+.flood-alert__message {
   flex: 1 1 auto;
   min-width: 0;
-  padding-right: 0.25rem;
+  padding-left: 8px;
+  padding-right: 4px;
 }
 
-.alert-panel__message p {
+.flood-alert__message p {
   margin: 0;
-  color: #1f2937;
-  font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.35;
+  color: #001f5b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-.alert-panel__check,
-.alert-panel__close {
+.flood-alert__message strong {
+  color: #001f5b;
+  font-weight: 700;
+}
+
+.flood-alert__meta {
+  display: block;
+  margin-top: 2px;
+  color: rgb(0 31 91 / 58%);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.flood-alert__check,
+.flood-alert__close {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
@@ -109,43 +173,134 @@ body {
     box-shadow 0.2s ease;
 }
 
-.alert-panel__check {
-  width: 2.25rem;
-  height: 2.25rem;
+.flood-alert__check {
+  width: auto;
+  min-width: 67px;
+  height: 36px;
+  padding: 0 14px;
   color: #ffffff;
-  background: #2563eb;
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  box-shadow: 0 8px 20px rgb(37 99 235 / 24%);
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.alert-panel__check:hover {
-  background: #1d4ed8;
+.flood-alert__check:hover {
+  background: linear-gradient(135deg, #60a5fa, #1d4ed8);
 }
 
-.alert-panel__check:focus-visible {
+.flood-alert__check:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgb(37 99 235 / 35%);
 }
 
-.alert-panel__close {
-  width: 2rem;
-  height: 2rem;
+.flood-alert__close {
+  width: 32px;
+  height: 32px;
   color: rgb(31 41 55 / 55%);
   background: transparent;
+  animation: blink-1 2s infinite both;
 }
 
-.alert-panel__close:hover {
+.flood-alert__close:hover {
   color: #1f2937;
-  background: rgb(37 99 235 / 10%);
+  background: rgb(96 165 250 / 12%);
 }
 
-.alert-panel__close:focus-visible {
+.flood-alert__close:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgb(37 99 235 / 30%);
+}
+
+.flood-alert--success {
+  border-color: rgb(96 165 250 / 34%);
+}
+
+.flood-alert--info {
+  border-color: rgb(56 189 248 / 42%);
+}
+
+.flood-alert--danger {
+  border-color: rgb(37 99 235 / 42%);
+}
+
+.square_box {
+  position: absolute;
+  border-top-left-radius: 45px;
+  opacity: 0.06;
+  transform: rotate(45deg);
+}
+
+.square_box.box_three {
+  left: -145px;
+  top: -170px;
+  width: 340px;
+  height: 340px;
+  border-radius: 45px;
+  background-image: linear-gradient(-90deg, #dbeafe 0%, #38bdf8 100%);
+}
+
+.square_box.box_four {
+  left: 90px;
+  top: -190px;
+  width: 380px;
+  height: 380px;
+  border-radius: 45px;
+  background-image: linear-gradient(-90deg, #f8fcff 0%, #60a5fa 100%);
+}
+
+.tooltip-trigger {
+  position: relative;
+}
+
+.tooltip-bubble {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 1100;
+  width: min(280px, 76vw);
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgb(96 165 250 / 48%);
+  border-radius: 14px;
+  background: rgb(0 14 41 / 92%);
+  box-shadow: 0 14px 32px rgb(31 41 55 / 28%);
+  color: #dbeafe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  text-shadow: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.tooltip-bubble::before {
+  position: absolute;
+  top: -5px;
+  right: 18px;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid rgb(96 165 250 / 48%);
+  border-top: 1px solid rgb(96 165 250 / 48%);
+  background: rgb(0 14 41 / 92%);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.tooltip-trigger:hover .tooltip-bubble,
+.tooltip-trigger:focus-visible .tooltip-bubble {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .watercolor-backdrop {
   position: relative;
   isolation: isolate;
-  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 18% 12%, rgb(255 255 255 / 76%) 0 18%, transparent 38%),
     linear-gradient(145deg, #f8fcff 0%, #dbeafe 30%, #60a5fa 72%, #38bdf8 100%);
@@ -179,6 +334,14 @@ body {
 .watercolor-backdrop > :not(.animated-background) {
   position: relative;
   z-index: 1;
+}
+
+.watercolor-backdrop > .flood-alert-layer {
+  position: fixed;
+  top: 70px;
+  right: 0;
+  left: 0;
+  z-index: 3000;
 }
 
 .animated-background span:nth-child(1) {
@@ -552,6 +715,28 @@ body {
   }
 }
 
+@keyframes alert-icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes blink-1 {
+  0%,
+  50%,
+  100% {
+    opacity: 1;
+  }
+  25%,
+  75% {
+    opacity: 0.35;
+  }
+}
+
 @keyframes background-orbit {
   100% {
     transform: translate3d(0, 0, 1px) rotate(360deg);
@@ -571,10 +756,15 @@ body {
     backdrop-filter: none;
   }
 
-  .alert-panel {
-    top: 0.75rem;
-    right: 0.75rem;
-    width: min(22rem, calc(100vw - 1.5rem));
+  .flood-alert-layer {
+    top: 70px;
+    min-height: 92px;
+    padding: 10px 0.75rem 0;
+  }
+
+  .flood-alert {
+    width: min(360px, calc(100vw - 24px));
+    padding: 10px 10px;
   }
 
   .animated-background span {

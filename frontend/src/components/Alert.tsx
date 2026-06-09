@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import type { Prediction } from "../types";
 
 type AlertProps = {
@@ -11,46 +11,64 @@ export default function Alert({ predictions, onHighlightRegion }: AlertProps) {
   const [showDesktopAlert, setShowDesktopAlert] = useState(true);
 
   const primaryAlert = useMemo(() => {
-    const active = predictions
-      .filter((item) => item.risk_label === "High")
-      .sort((a, b) => b.risk_score - a.risk_score)
-      [0];
-    if (active) return active;
-    return [...predictions].sort((a, b) => b.risk_score - a.risk_score)[0];
+    let active: Prediction | undefined;
+    let highest: Prediction | undefined;
+
+    for (const item of predictions) {
+      if (!highest || item.risk_score > highest.risk_score) highest = item;
+      if (item.risk_label === "High" && (!active || item.risk_score > active.risk_score)) active = item;
+    }
+
+    return active ?? highest;
   }, [predictions]);
 
   if (!showDesktopAlert || !primaryAlert) return null;
 
+  const isHighRisk = primaryAlert.risk_label === "High";
+  const alertTone = isHighRisk ? "flood-alert--danger" : primaryAlert.risk_score > 0 ? "flood-alert--info" : "flood-alert--success";
+  const handleCheck = () => {
+    onHighlightRegion(primaryAlert.region_id);
+    setShowDesktopAlert(false);
+  };
+
   return (
     <aside
-      className="popup alert-panel"
+      className={`flood-alert ${alertTone}`}
       role="alert"
       aria-live="assertive"
     >
-      <div className="alert-panel__content">
-        <span className="alert-panel__icon">
-          <Bell className="alert-panel__icon-svg" />
+      <div className="square_box box_three" aria-hidden="true" />
+      <div className="square_box box_four" aria-hidden="true" />
+      <div className="flood-alert__content">
+        <span className="flood-alert__mark" aria-hidden="true">
+          <AlertTriangle className="flood-alert__icon-svg" />
         </span>
-        <div className="alert-panel__message">
-          <p>High risk alert in {primaryAlert.region_name}</p>
+        <div className="flood-alert__message">
+          <p>
+            <strong>{isHighRisk ? "Oh snap!" : "Heads up!"}</strong>{" "}
+            {isHighRisk ? "High flood-risk signal" : "Flood-risk signal"} in {primaryAlert.region_name}.
+          </p>
+          <span className="flood-alert__meta">
+            Score {Math.round(primaryAlert.risk_score * 100)}% - {primaryAlert.rainfall_7d} mm rain
+          </span>
         </div>
         <button
           type="button"
-          className="alert-panel__check"
-          onClick={() => onHighlightRegion(primaryAlert.region_id)}
+          className="flood-alert__check"
+          onClick={handleCheck}
           title={`Highlight and zoom to ${primaryAlert.region_name}`}
           aria-label={`Highlight and zoom to ${primaryAlert.region_name}`}
         >
-          <Check className="alert-panel__button-svg" />
+          Check
         </button>
         <button
           type="button"
-          className="alert-panel__close"
+          className="flood-alert__close"
           onClick={() => setShowDesktopAlert(false)}
           title="Close alert"
           aria-label="Close alert"
         >
-          <X className="alert-panel__button-svg" />
+          <X className="flood-alert__button-svg" />
         </button>
       </div>
     </aside>

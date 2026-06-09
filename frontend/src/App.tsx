@@ -22,7 +22,7 @@ const navItems = [
 ] as const;
 const kpiSkeletonSlots = ["high-risk", "highest-risk", "rainfall", "source"] as const;
 const layout = {
-  header: "app-header sticky top-0 z-30 border-b border-white/40 bg-panel/90 backdrop-blur-xl",
+  header: "app-header z-30 border-b border-white/40 bg-panel/90 backdrop-blur-xl",
   headerInner: "mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4 lg:px-8",
   headerRow: "flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4",
   nav: "mobile-nav -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 text-sm sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0",
@@ -113,7 +113,6 @@ function App() {
       ) : (
       <main className="watercolor-backdrop min-h-dvh text-ink">
       <div className="animated-background" aria-hidden="true">{backgroundSpans}</div>
-      <Alert predictions={data} onHighlightRegion={highlightAlertRegion} />
       <header className={`${layout.header} header-slide-up`}>
         <div className={layout.headerInner}>
           <div className={layout.headerRow}>
@@ -138,6 +137,9 @@ function App() {
           </nav>
         </div>
       </header>
+      <div className="flood-alert-layer" aria-live="polite">
+        <Alert predictions={data} onHighlightRegion={highlightAlertRegion} />
+      </div>
 
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
         <div className="grid overflow-hidden rounded-[18px] border border-white/60 bg-ink text-xs text-white shadow-[0_18px_50px_rgb(31_41_55_/_0.14)] sm:grid-cols-4">
