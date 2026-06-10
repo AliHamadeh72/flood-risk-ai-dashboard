@@ -13,11 +13,24 @@ const getMongoDb = async () => {
   if (!process.env.MONGODB_URI) return null;
 
   if (!mongoClientPromise) {
-    const client = new MongoClient(process.env.MONGODB_URI);
+    const client = new MongoClient(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 8000
+    });
     mongoClientPromise = client.connect();
   }
 
-  const client = await mongoClientPromise;
+  let client;
+  try {
+    client = await mongoClientPromise;
+  } catch (error) {
+    mongoClientPromise = null;
+    console.error("[push-store] MongoDB connection failed", {
+      message: error.message,
+      name: error.name
+    });
+    throw new Error("MongoDB connection failed. Check MONGODB_URI, Atlas IP access, and TLS connection string format.");
+  }
+
   return client.db(process.env.MONGODB_DB || "flood-risk-ai-dashboard");
 };
 
