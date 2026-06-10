@@ -72,6 +72,7 @@ module.exports = async function handler(request, response) {
     const currentRiskLevel = normalizeRiskLevel(payload.riskLevel || payload.risk_label);
     const regionId = payload.regionId || payload.region_id || "unknown-region";
     const stateId = `${alertType}:${regionId}`;
+    const forceTestNotification = payload.forceTestNotification === true;
 
     if (payload.action === "reset-risk-state") {
       await deleteRiskState(stateId);
@@ -94,7 +95,7 @@ module.exports = async function handler(request, response) {
       return;
     }
 
-    if (!increased) {
+    if (!increased && !forceTestNotification) {
       response.status(200).json({ ok: true, sent: 0, reason: "Risk level did not increase." });
       return;
     }
@@ -131,7 +132,7 @@ module.exports = async function handler(request, response) {
     const sent = results.filter((result) => result.status === "fulfilled").length;
     const failed = results.length - sent;
 
-    response.status(200).json({ ok: true, sent, failed, eligible: eligibleSubscriptions.length });
+    response.status(200).json({ ok: true, sent, failed, eligible: eligibleSubscriptions.length, forced: forceTestNotification });
   } catch (error) {
     response.status(500).json({ error: error.message || "Failed to send push notifications" });
   }

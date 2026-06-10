@@ -99,6 +99,7 @@ export const sendTestDatasetUpdatePush = async (alert: Prediction, previousRiskL
       regionName: alert.region_name,
       riskLevel: alert.risk_label,
       previousRiskLevel,
+      forceTestNotification: true,
       date: alert.date,
       title: "Test high flood-risk alert",
       body: `${alert.region_name} was manually raised to High risk for testing.`,
