@@ -1,5 +1,5 @@
 const webpush = require("web-push");
-const { deleteSubscription, getRiskState, listSubscriptions, saveRiskState } = require("./_pushStore");
+const { deleteRiskState, deleteSubscription, getRiskState, listSubscriptions, saveRiskState } = require("./_pushStore");
 
 const RISK_ORDER = {
   Low: 1,
@@ -72,6 +72,13 @@ module.exports = async function handler(request, response) {
     const currentRiskLevel = normalizeRiskLevel(payload.riskLevel || payload.risk_label);
     const regionId = payload.regionId || payload.region_id || "unknown-region";
     const stateId = `${alertType}:${regionId}`;
+
+    if (payload.action === "reset-risk-state") {
+      await deleteRiskState(stateId);
+      response.status(200).json({ ok: true, reset: true, stateId });
+      return;
+    }
+
     const previousState = await getRiskState(stateId);
     const previousRiskLevel = normalizeRiskLevel(payload.previousRiskLevel || previousState?.riskLevel || "Low");
     const increased = riskValue(currentRiskLevel) > riskValue(previousRiskLevel);

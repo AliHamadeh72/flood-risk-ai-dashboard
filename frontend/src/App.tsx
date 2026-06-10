@@ -12,7 +12,9 @@ import type { MapMode, Prediction, RainySeasonRecord } from "./types";
 import {
   getNotificationState,
   notifyHighRiskDatasetUpdate,
-  requestFloodNotificationPermission
+  requestFloodNotificationPermission,
+  sendTestDatasetReset,
+  sendTestDatasetUpdatePush
 } from "./utils/floodNotifications";
 
 const baseData = predictions as Prediction[];
@@ -96,6 +98,7 @@ function App() {
   const [notificationState, setNotificationState] = useState(() => getNotificationState());
   const [pushAlertTypes, setPushAlertTypes] = useState<Array<"flood" | "fire">>(["flood"]);
   const [pushThreshold, setPushThreshold] = useState<"Low" | "Medium" | "High">("High");
+  const [testPushStatus, setTestPushStatus] = useState<string | null>(null);
   const dashboardStats = useMemo(() => calculateDashboardStats(dashboardData), [dashboardData]);
   const dataByRegion = useMemo(() => new globalThis.Map(dashboardData.map((item) => [item.region_id, item])), [dashboardData]);
   const latestHighRiskAlert = useMemo(() => getLatestHighRiskAlert(dashboardData), [dashboardData]);
@@ -147,27 +150,43 @@ function App() {
     });
     window.setTimeout(() => setOptimisticModeLabel(null), 700);
   };
-  const triggerTestAlert = () => {
+  const triggerTestAlert = async () => {
     if (!testAlertTarget) return;
+    const testAlert: Prediction = {
+      ...testAlertTarget,
+      risk_label: "High",
+      risk_score: 1,
+      rainfall_7d: Math.max(testAlertTarget.rainfall_7d, 28)
+    };
+
     setDashboardData((records) =>
       records.map((item) =>
         item.region_id === testAlertTarget.region_id && item.date === testAlertTarget.date
-          ? {
-              ...item,
-              risk_label: "High",
-              risk_score: 1,
-              rainfall_7d: Math.max(item.rainfall_7d, 28)
-            }
+          ? testAlert
           : item
       )
     );
     setIsTestAlertActive(true);
     setAlertRenderKey((key) => key + 1);
+    setTestPushStatus("Sending test push...");
+
+    try {
+      const result = await sendTestDatasetUpdatePush(testAlert, testAlertTarget.risk_label);
+      if (result.sent > 0) {
+        setTestPushStatus(`Push sent to ${result.sent} mobile subscription(s).`);
+      } else {
+        setTestPushStatus(result.reason || `No eligible mobile subscriptions found.`);
+      }
+    } catch (error) {
+      setTestPushStatus(error instanceof Error ? error.message : "Test push failed.");
+    }
   };
   const resetTestAlert = () => {
     setDashboardData(baseData);
     setIsTestAlertActive(false);
     setAlertRenderKey((key) => key + 1);
+    setTestPushStatus(null);
+    if (testAlertTarget) void sendTestDatasetReset(testAlertTarget);
   };
   const enableFloodNotifications = async () => {
     const permission = await requestFloodNotificationPermission({
@@ -232,6 +251,7 @@ function App() {
           Reverse
         </button>
         {testAlertTarget && <span className="alert-test-controls__meta">{testAlertTarget.region_name}</span>}
+        {testPushStatus && <span className="alert-test-controls__meta">{testPushStatus}</span>}
       </div>
       <div className="alert-test-controls mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-2 sm:px-6 lg:px-8">
         <span className="alert-test-controls__label">Mobile alerts</span>

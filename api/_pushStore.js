@@ -93,8 +93,19 @@ const saveRiskState = async (id, state) => {
   return record;
 };
 
+const deleteRiskState = async (id) => {
+  const db = await getMongoDb();
+  if (db) {
+    await db.collection("riskStates").deleteOne({ _id: id });
+    return;
+  }
+
+  memoryStore.riskStates.delete(id);
+};
+
 module.exports = {
   deleteSubscription,
+  deleteRiskState,
   getRiskState,
   listSubscriptions,
   saveRiskState,
