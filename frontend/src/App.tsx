@@ -9,6 +9,11 @@ import ModelInfo from "./components/ModelInfo";
 import RiskCharts, { RainySeasonRiskChart } from "./components/RiskCharts";
 import RiskTable from "./components/RiskTable";
 import type { MapMode, Prediction, RainySeasonRecord } from "./types";
+import {
+  getNotificationState,
+  notifyHighRiskDatasetUpdate,
+  requestFloodNotificationPermission
+} from "./utils/floodNotifications";
 
 const baseData = predictions as Prediction[];
 const rainyData = rainySeasonHistory as RainySeasonRecord[];
@@ -62,6 +67,22 @@ const calculateDashboardStats = (records: Prediction[]) => {
   };
 };
 
+const getLatestHighRiskAlert = (records: Prediction[]) => {
+  let latestDate = "";
+  let active: Prediction | undefined;
+
+  for (const item of records) {
+    if (item.date > latestDate) latestDate = item.date;
+  }
+
+  for (const item of records) {
+    if (item.date !== latestDate || item.risk_label !== "High") continue;
+    if (!active || item.risk_score > active.risk_score) active = item;
+  }
+
+  return active;
+};
+
 function App() {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [dashboardData, setDashboardData] = useState<Prediction[]>(baseData);
@@ -72,14 +93,23 @@ function App() {
   const [zoomRequestId, setZoomRequestId] = useState(0);
   const [mapMode, setMapMode] = useState<MapMode>("current");
   const [optimisticModeLabel, setOptimisticModeLabel] = useState<string | null>(null);
+  const [notificationState, setNotificationState] = useState(() => getNotificationState());
+  const [pushAlertTypes, setPushAlertTypes] = useState<Array<"flood" | "fire">>(["flood"]);
+  const [pushThreshold, setPushThreshold] = useState<"Low" | "Medium" | "High">("High");
   const dashboardStats = useMemo(() => calculateDashboardStats(dashboardData), [dashboardData]);
   const dataByRegion = useMemo(() => new globalThis.Map(dashboardData.map((item) => [item.region_id, item])), [dashboardData]);
+  const latestHighRiskAlert = useMemo(() => getLatestHighRiskAlert(dashboardData), [dashboardData]);
   const selectedRegionName = selectedRegionId ? dataByRegion.get(selectedRegionId)?.region_name ?? selectedRegionId : "None";
 
   useEffect(() => {
     const timer = window.setTimeout(() => setShowSkeleton(false), 1200);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!latestHighRiskAlert) return;
+    void notifyHighRiskDatasetUpdate(latestHighRiskAlert);
+  }, [latestHighRiskAlert]);
 
   const selectRegion = (regionId: string) => {
     setSelectedRegionId((current) => {
@@ -139,6 +169,25 @@ function App() {
     setIsTestAlertActive(false);
     setAlertRenderKey((key) => key + 1);
   };
+  const enableFloodNotifications = async () => {
+    const permission = await requestFloodNotificationPermission({
+      alertTypes: pushAlertTypes.length ? pushAlertTypes : ["flood"],
+      threshold: pushThreshold
+    });
+    setNotificationState(permission);
+    if (permission === "granted" && latestHighRiskAlert) {
+      void notifyHighRiskDatasetUpdate(latestHighRiskAlert);
+    }
+  };
+  const togglePushAlertType = (alertType: "flood" | "fire") => {
+    setPushAlertTypes((current) => {
+      if (current.includes(alertType)) {
+        const next = current.filter((type) => type !== alertType);
+        return next.length ? next : current;
+      }
+      return [...current, alertType];
+    });
+  };
 
   return (
     <>
@@ -183,6 +232,32 @@ function App() {
           Reverse
         </button>
         {testAlertTarget && <span className="alert-test-controls__meta">{testAlertTarget.region_name}</span>}
+      </div>
+      <div className="alert-test-controls mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-2 sm:px-6 lg:px-8">
+        <span className="alert-test-controls__label">Mobile alerts</span>
+        <label className="alert-test-controls__option">
+          <input type="checkbox" checked={pushAlertTypes.includes("flood")} onChange={() => togglePushAlertType("flood")} />
+          Flood
+        </label>
+        <label className="alert-test-controls__option">
+          <input type="checkbox" checked={pushAlertTypes.includes("fire")} onChange={() => togglePushAlertType("fire")} />
+          Fire
+        </label>
+        <select className="alert-test-controls__select" value={pushThreshold} onChange={(event) => setPushThreshold(event.target.value as "Low" | "Medium" | "High")}>
+          <option value="Low">Low threshold</option>
+          <option value="Medium">Medium threshold</option>
+          <option value="High">High threshold</option>
+        </select>
+        <button type="button" className="alert-test-controls__button" onClick={enableFloodNotifications} disabled={notificationState === "granted" || notificationState === "unsupported"}>
+          {notificationState === "granted" ? "Notifications enabled" : "Enable notifications"}
+        </button>
+        <span className="alert-test-controls__meta">
+          {notificationState === "unsupported"
+            ? "Unsupported on this browser"
+            : notificationState === "denied"
+              ? "Permission denied in browser settings"
+              : "Notifies when an updated dataset has a high-risk cadaster"}
+        </span>
       </div>
 
       <section className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">

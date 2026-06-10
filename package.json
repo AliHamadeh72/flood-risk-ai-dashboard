@@ -1,0 +1,24 @@
+{
+  "name": "flood-risk-ai-dashboard",
+  "version": "1.0.0",
+  "description": "Portfolio project for visualizing cadaster-level flood-risk indicators in Lebanon using a local cadaster shapefile, Open-Meteo weather data, and a grounded retrieval chatbot.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AliHamadeh72/flood-risk-ai-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AliHamadeh72/flood-risk-ai-dashboard/issues"
+  },
+  "homepage": "https://github.com/AliHamadeh72/flood-risk-ai-dashboard#readme",
+  "dependencies": {
+    "mongodb": "^7.3.0",
+    "web-push": "^3.6.7"
+  }
+}

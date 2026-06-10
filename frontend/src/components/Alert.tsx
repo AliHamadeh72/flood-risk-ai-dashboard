@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import type { Prediction } from "../types";
 
@@ -25,34 +25,6 @@ export default function Alert({ predictions, onHighlightRegion }: AlertProps) {
 
     return active;
   }, [predictions]);
-
-  useEffect(() => {
-    if (!primaryAlert || typeof window === "undefined" || !("Notification" in window)) return;
-
-    const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
-    if (!isMobileViewport) return;
-
-    const notificationKey = `flood-alert:${primaryAlert.region_id}:${primaryAlert.date}`;
-    if (window.localStorage.getItem(notificationKey)) return;
-
-    const showSystemNotification = () => {
-      if (Notification.permission !== "granted") return;
-      new Notification("High flood-risk signal", {
-        body: `${primaryAlert.region_name}: ${Math.round(primaryAlert.risk_score * 100)}% risk, ${primaryAlert.rainfall_7d} mm rain.`,
-        tag: notificationKey
-      });
-      window.localStorage.setItem(notificationKey, "shown");
-    };
-
-    if (Notification.permission === "default") {
-      void Notification.requestPermission().then((permission) => {
-        if (permission === "granted") showSystemNotification();
-      });
-      return;
-    }
-
-    showSystemNotification();
-  }, [primaryAlert]);
 
   if (!showDesktopAlert || !primaryAlert) return null;
 

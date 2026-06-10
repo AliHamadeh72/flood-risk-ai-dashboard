@@ -278,6 +278,31 @@ body {
   background: rgb(255 255 255 / 95%);
 }
 
+.alert-test-controls__option,
+.alert-test-controls__select {
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  color: #001f5b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.alert-test-controls__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+}
+
+.alert-test-controls__option input {
+  accent-color: #2563eb;
+}
+
+.alert-test-controls__select {
+  padding: 7px 10px;
+}
+
 .square_box {
   position: absolute;
   border-top-left-radius: 45px;
