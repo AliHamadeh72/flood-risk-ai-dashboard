@@ -8,7 +8,7 @@
     "refresh:open-meteo": "python ml/weekly_open_meteo_refresh.py",
     "mongo:upload-cadaster-risk": "node scripts/upload-cadaster-risk-to-mongodb.js",
     "pipeline:refresh-and-upload": "npm run refresh:open-meteo && npm run mongo:upload-cadaster-risk",
-    "test": "node -e \"require('./api/push-send.js'); require('./api/push-subscriptions.js'); console.log('api ok')\""
+    "test": "node -e \"require('./api/push-send.js'); require('./api/push-subscriptions.js'); require('./api/test-risk-alert.js'); console.log('api ok')\""
   },
   "repository": {
     "type": "git",

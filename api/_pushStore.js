@@ -119,6 +119,7 @@ const deleteRiskState = async (id) => {
 module.exports = {
   deleteSubscription,
   deleteRiskState,
+  getMongoDb,
   getRiskState,
   listSubscriptions,
   saveRiskState,

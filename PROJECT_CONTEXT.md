@@ -154,6 +154,9 @@ The risk map now uses cadasters instead of demo region polygons.
 - `api/chat.js` provides a serverless chat endpoint for Vercel deployments.
 - The chat endpoint can answer basic conversation, Red Cross-style general flood safety guidance, and grounded cadaster flood-risk questions.
 - Data questions are answered from the dashboard prediction records. General conversation is routed through the configured Ollama model when available.
+- `api/test-risk-alert.js` backs the dashboard test controls:
+  - `Trigger high risk` snapshots the original MongoDB cadaster risk rows, updates `cadasterRiskPredictions`, `cadasterRiskLatest`, and `riskStates`, then sends Web Push from the Mongo-backed High-risk update.
+  - `Reverse all` restores the original MongoDB records from `testRiskOverrides`.
 
 The chatbot should not invent values. If the retrieved records do not contain an answer, it should say the data is unavailable.
 

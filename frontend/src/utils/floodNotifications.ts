@@ -87,24 +87,16 @@ export const notifyHighRiskDatasetUpdate = async (alert: Prediction) => {
 };
 
 export const sendTestDatasetUpdatePush = async (alert: Prediction, previousRiskLevel = "Low") => {
-  const endpoint = import.meta.env.VITE_PUSH_SEND_ENDPOINT || `${window.location.origin}/api/push-send`;
-  await resetTestRiskState(endpoint, alert);
+  const endpoint = import.meta.env.VITE_TEST_RISK_ALERT_ENDPOINT || `${window.location.origin}/api/test-risk-alert`;
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      action: "trigger-high-risk",
       alertType: "flood",
-      regionId: alert.region_id,
-      regionName: alert.region_name,
-      riskLevel: alert.risk_label,
       previousRiskLevel,
-      forceTestNotification: true,
-      date: alert.date,
-      title: "Test high flood-risk alert",
-      body: `${alert.region_name} was manually raised to High risk for testing.`,
-      url: `${window.location.origin}${import.meta.env.BASE_URL}`,
-      tag: `test-flood-alert:${alert.region_id}:${alert.date}:${Date.now()}`
+      prediction: alert
     })
   });
 
@@ -113,30 +105,24 @@ export const sendTestDatasetUpdatePush = async (alert: Prediction, previousRiskL
     throw new Error(message || "Failed to send test push notification.");
   }
 
-  return response.json();
+  const result = await response.json();
+  return {
+    ...result,
+    ...(result.push || {})
+  };
 };
 
 export const sendTestDatasetReset = async (alert: Prediction) => {
-  const endpoint = import.meta.env.VITE_PUSH_SEND_ENDPOINT || `${window.location.origin}/api/push-send`;
-  await resetTestRiskState(endpoint, alert).catch((error) => {
-    console.warn("Test push reset did not reach the backend.", error);
-  });
-};
-
-const resetTestRiskState = async (endpoint: string, alert: Prediction) => {
-  const response = await fetch(endpoint, {
+  const endpoint = import.meta.env.VITE_TEST_RISK_ALERT_ENDPOINT || `${window.location.origin}/api/test-risk-alert`;
+  await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: "reset-risk-state",
+      action: "reverse-high-risk",
       alertType: "flood",
-      regionId: alert.region_id,
-      regionName: alert.region_name
+      prediction: alert
     })
+  }).catch((error) => {
+    console.warn("Test risk reset did not reach the backend.", error);
   });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || "Failed to reset test risk state.");
-  }
 };
