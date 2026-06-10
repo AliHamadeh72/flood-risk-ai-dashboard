@@ -40,13 +40,21 @@ const layout = {
   cardPadded: "rounded-[18px] border border-white/60 bg-white/90 p-4 shadow-[0_18px_50px_rgb(31_41_55_/_0.12)] backdrop-blur-md"
 };
 
-const testAlertTarget = (() => {
+const getInitialTestAlertTarget = () => {
   let latestDate = "";
   for (const item of baseData) {
     if (item.date > latestDate) latestDate = item.date;
   }
   return baseData.find((item) => item.date === latestDate && item.risk_label !== "High") ?? baseData.find((item) => item.date === latestDate) ?? baseData[0];
-})();
+};
+
+const getNextTestAlertTarget = (records: Prediction[]) => {
+  let latestDate = "";
+  for (const item of records) {
+    if (item.date > latestDate) latestDate = item.date;
+  }
+  return records.find((item) => item.date === latestDate && item.risk_label !== "High");
+};
 
 const calculateDashboardStats = (records: Prediction[]) => {
   const highRisk: Prediction[] = [];
@@ -89,6 +97,7 @@ function App() {
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [dashboardData, setDashboardData] = useState<Prediction[]>(baseData);
   const [isTestAlertActive, setIsTestAlertActive] = useState(false);
+  const [testAlertRecords, setTestAlertRecords] = useState<Prediction[]>([]);
   const [alertRenderKey, setAlertRenderKey] = useState(0);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [alertRegionId, setAlertRegionId] = useState<string | null>(null);
@@ -102,6 +111,7 @@ function App() {
   const dashboardStats = useMemo(() => calculateDashboardStats(dashboardData), [dashboardData]);
   const dataByRegion = useMemo(() => new globalThis.Map(dashboardData.map((item) => [item.region_id, item])), [dashboardData]);
   const latestHighRiskAlert = useMemo(() => getLatestHighRiskAlert(dashboardData), [dashboardData]);
+  const nextTestAlertTarget = useMemo(() => getNextTestAlertTarget(dashboardData), [dashboardData]);
   const selectedRegionName = selectedRegionId ? dataByRegion.get(selectedRegionId)?.region_name ?? selectedRegionId : "None";
 
   useEffect(() => {
@@ -151,27 +161,28 @@ function App() {
     window.setTimeout(() => setOptimisticModeLabel(null), 700);
   };
   const triggerTestAlert = async () => {
-    if (!testAlertTarget) return;
+    if (!nextTestAlertTarget) return;
     const testAlert: Prediction = {
-      ...testAlertTarget,
+      ...nextTestAlertTarget,
       risk_label: "High",
       risk_score: 1,
-      rainfall_7d: Math.max(testAlertTarget.rainfall_7d, 28)
+      rainfall_7d: Math.max(nextTestAlertTarget.rainfall_7d, 28)
     };
 
     setDashboardData((records) =>
       records.map((item) =>
-        item.region_id === testAlertTarget.region_id && item.date === testAlertTarget.date
+        item.region_id === nextTestAlertTarget.region_id && item.date === nextTestAlertTarget.date
           ? testAlert
           : item
       )
     );
+    setTestAlertRecords((records) => [...records, testAlert]);
     setIsTestAlertActive(true);
     setAlertRenderKey((key) => key + 1);
     setTestPushStatus("Sending test push...");
 
     try {
-      const result = await sendTestDatasetUpdatePush(testAlert, testAlertTarget.risk_label);
+      const result = await sendTestDatasetUpdatePush(testAlert, nextTestAlertTarget.risk_label);
       if (result.sent > 0) {
         setTestPushStatus(`Push sent to ${result.sent} mobile subscription(s).`);
       } else {
@@ -182,11 +193,15 @@ function App() {
     }
   };
   const resetTestAlert = () => {
+    const alertsToReset = testAlertRecords.length ? testAlertRecords : [getInitialTestAlertTarget()].filter(Boolean);
     setDashboardData(baseData);
     setIsTestAlertActive(false);
+    setTestAlertRecords([]);
     setAlertRenderKey((key) => key + 1);
     setTestPushStatus(null);
-    if (testAlertTarget) void sendTestDatasetReset(testAlertTarget);
+    for (const alert of alertsToReset) {
+      void sendTestDatasetReset(alert);
+    }
   };
   const enableFloodNotifications = async () => {
     const permission = await requestFloodNotificationPermission({
@@ -244,13 +259,16 @@ function App() {
       </div>
       <div className="alert-test-controls mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-4 sm:px-6 lg:px-8">
         <span className="alert-test-controls__label">Alert test</span>
-        <button type="button" className="alert-test-controls__button" onClick={triggerTestAlert} disabled={isTestAlertActive || !testAlertTarget}>
+        <button type="button" className="alert-test-controls__button" onClick={triggerTestAlert} disabled={!nextTestAlertTarget}>
           Trigger high risk
         </button>
-        <button type="button" className="alert-test-controls__button alert-test-controls__button--ghost" onClick={resetTestAlert} disabled={!isTestAlertActive}>
-          Reverse
+        <button type="button" className="alert-test-controls__button alert-test-controls__button--ghost" onClick={resetTestAlert} disabled={!testAlertRecords.length}>
+          Reverse all
         </button>
-        {testAlertTarget && <span className="alert-test-controls__meta">{testAlertTarget.region_name}</span>}
+        <span className="alert-test-controls__meta">
+          {nextTestAlertTarget ? `Next: ${nextTestAlertTarget.region_name}` : "All latest cadasters are high risk"}
+        </span>
+        {testAlertRecords.length > 0 && <span className="alert-test-controls__meta">{testAlertRecords.length} test high-risk cadaster(s)</span>}
         {testPushStatus && <span className="alert-test-controls__meta">{testPushStatus}</span>}
       </div>
       <div className="alert-test-controls mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-2 sm:px-6 lg:px-8">
