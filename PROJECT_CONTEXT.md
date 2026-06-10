@@ -88,6 +88,23 @@ python ml/build_open_meteo_predictions.py
 python ml/build_rainy_season_risk.py
 ```
 
+MongoDB upload:
+
+- `scripts/upload-cadaster-risk-to-mongodb.js`
+  - reads `data/geo/cadasters.geojson`
+  - reads `data/predictions/risk_predictions.json`
+  - uploads cadaster geometry/properties to `cadasters`
+  - uploads calculated formula output to `cadasterRiskPredictions`
+  - upserts the latest row per cadaster to `cadasterRiskLatest`
+  - updates `riskStates` with latest flood risk levels for push-notification comparisons
+  - writes a run summary to `pipelineRuns`
+- root npm scripts:
+  - `npm run mongo:upload-cadaster-risk`
+  - `npm run pipeline:refresh-and-upload`
+- Required env:
+  - `MONGODB_URI`
+  - `MONGODB_DB` defaults to `flood-risk-ai-dashboard`
+
 ## Validation Fixtures
 
 - `ml/generate_open_meteo_test_data.py` writes deterministic weather, flood, and expected-risk fixtures under `data/test/`.

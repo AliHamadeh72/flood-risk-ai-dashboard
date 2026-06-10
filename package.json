@@ -4,7 +4,11 @@
   "description": "Portfolio project for visualizing cadaster-level flood-risk indicators in Lebanon using a local cadaster shapefile, Open-Meteo weather data, and a grounded retrieval chatbot.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:predictions": "python ml/build_open_meteo_predictions.py",
+    "refresh:open-meteo": "python ml/weekly_open_meteo_refresh.py",
+    "mongo:upload-cadaster-risk": "node scripts/upload-cadaster-risk-to-mongodb.js",
+    "pipeline:refresh-and-upload": "npm run refresh:open-meteo && npm run mongo:upload-cadaster-risk",
+    "test": "node -e \"require('./api/push-send.js'); require('./api/push-subscriptions.js'); console.log('api ok')\""
   },
   "repository": {
     "type": "git",

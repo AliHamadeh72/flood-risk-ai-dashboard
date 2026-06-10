@@ -101,6 +101,35 @@ python ml/weekly_open_meteo_refresh.py --limit 1
 
 The workflow in `.github/workflows/weekly-open-meteo-refresh.yml` runs every Monday at 03:00 UTC, commits changed data artifacts, and lets Vercel redeploy the static dashboard from Git.
 
+### 4. Upload Cadaster Risk Data to MongoDB
+
+Set MongoDB connection variables in an ignored `.env` or `.env.local` file:
+
+```env
+MONGODB_URI=mongodb+srv://USER:PASSWORD@HOST/flood-risk-ai-dashboard?retryWrites=true&w=majority
+MONGODB_DB=flood-risk-ai-dashboard
+```
+
+Upload the current calculated cadaster GeoJSON and risk predictions:
+
+```bash
+npm run mongo:upload-cadaster-risk
+```
+
+Run the Open-Meteo refresh and then upload the regenerated risk dataset:
+
+```bash
+npm run pipeline:refresh-and-upload
+```
+
+MongoDB collections written by the upload:
+
+- `cadasters`: cadaster properties and geometry keyed by `region_id`
+- `cadasterRiskPredictions`: all calculated prediction records keyed by `region_id:date`
+- `cadasterRiskLatest`: latest calculated prediction per cadaster
+- `riskStates`: latest flood risk state used by push-notification increase checks
+- `pipelineRuns`: upload metadata and record counts
+
 ## Data Sources
 
 - Lebanon cadaster shapefile from `C:\Users\Mohammad Mahdi\Documents\Cadasters`
